@@ -91,6 +91,5 @@ target/
 .db
 /data
 
-
 demo_env/*
 *.env
