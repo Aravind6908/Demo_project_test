@@ -92,5 +92,5 @@ target/
 /data
 
 
-stream_venv/*
+demo_venv/*
 *.env
