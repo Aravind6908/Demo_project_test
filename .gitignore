@@ -92,5 +92,5 @@ target/
 /data
 
 
-demo_venv/*
+demo_env/*
 *.env
