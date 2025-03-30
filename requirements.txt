@@ -1,0 +1,12 @@
+streamlit
+docx2txt
+PyPDF2
+python-dotenv
+openai
+sentence-transformers
+transformers
+nltk
+requests
+torch
+torchvision
+
