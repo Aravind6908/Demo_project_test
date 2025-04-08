@@ -6,6 +6,7 @@ import time  # Used to simulate typing effect
 import nltk
 import re
 import os
+import time  # already imported in your code
 import requests
 from dotenv import load_dotenv
 import torch
@@ -15,11 +16,17 @@ import hashlib
 from nltk import sent_tokenize
 nltk.download('punkt_tab')
 from transformers import LEDTokenizer, LEDForConditionalGeneration
+from transformers import pipeline
+import asyncio
+import sys
+# Fix for RuntimeError: no running event loop on Windows
+if sys.platform.startswith("win"):
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
 st.set_page_config(page_title="Legal Document Summarizer", layout="wide")
 
-st.title("📄 Legal Document Summarizer (stage 4)")
+st.title("📄 Legal Document Summarizer (stage 4 )")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -74,41 +81,19 @@ load_dotenv()
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 
 
-def classify_zero_shot_hfapi(text, labels):
-    if not HF_API_TOKEN:
-        return "❌ Hugging Face token not found."
+# Load once at the top (cache for performance)
+@st.cache_resource
+def load_local_zero_shot_classifier():
+    return pipeline("zero-shot-classification", model="typeform/distilbert-base-uncased-mnli")
 
-    headers = {
-        "Authorization": f"Bearer {HF_API_TOKEN}"
-    }
-
-    payload = {
-        "inputs": text,
-        "parameters": {
-            "candidate_labels": labels
-        }
-    }
-
-    response = requests.post(
-        "https://api-inference.huggingface.co/models/valhalla/distilbart-mnli-12-1",
-        headers=headers,
-        json=payload
-    )
-
-    if response.status_code != 200:
-        return f"❌ Error from HF API: {response.status_code} - {response.text}"
-
-    result = response.json()
-    return result["labels"][0]  # Return the top label
+local_classifier = load_local_zero_shot_classifier()
 
 
-# Labels for section classification
 SECTION_LABELS = ["Facts", "Arguments", "Judgment", "Other"]
 
-
 def classify_chunk(text):
-    return classify_zero_shot_hfapi(text, SECTION_LABELS)
-    # return result['labels'][0] if result and 'labels' in result else "Other"
+    result = local_classifier(text, candidate_labels=SECTION_LABELS)
+    return result["labels"][0]
 
 
 # NEW: NLP-based sectioning using zero-shot classification
@@ -354,6 +339,9 @@ if uploaded_file:
     
     # Check if file is new OR reprocess is triggered
     if file_hash != st.session_state.get("last_uploaded_hash") or reprocess_btn:
+
+        start_time = time.time()  # Start the timer
+
         raw_text = extract_text(uploaded_file)
         
         summary_dict = hybrid_summary_hierarchical(raw_text)
@@ -366,16 +354,6 @@ if uploaded_file:
 
         # Start building preview
         preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
-
-        # Force order: Facts → Arguments → Judgment → Other
-        # for section in ["Facts", "Arguments", "Judgment", "Other"]:
-        #     if section in summary_dict:
-        #         extractive = summary_dict[section].get("extractive", "").strip()
-        #         abstractive = summary_dict[section].get("abstractive", "").strip()
-
-        #         preview_text += f"### 📘 {section} Section\n"
-        #         preview_text += f"📌 **Extractive Summary:**\n{extractive if extractive else '_No content extracted._'}\n\n"
-        #         preview_text += f"🔍 **Abstractive Summary:**\n{abstractive if abstractive else '_No summary generated._'}\n\n"
 
         
         for section in ["Facts", "Arguments", "Judgment", "Other"]:
@@ -398,24 +376,32 @@ if uploaded_file:
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(clean_text(preview_text), speed=0)
 
+        # Show processing time after the summary
+        processing_time = round(time.time() - start_time, 2)
+        st.session_state["last_response_time"] = processing_time
+
+        if "last_response_time" in st.session_state:
+            st.info(f"⏱️ Response generated in **{st.session_state['last_response_time']} seconds**.")
+
         st.session_state.messages.append({
             "role": "assistant",
             "content": clean_text(preview_text)
         })
-
 
         # Save this file hash only if it’s a new upload (avoid overwriting during reprocess)
         if not reprocess_btn:
             st.session_state.last_uploaded_hash = file_hash
 
         save_chat_history(st.session_state.messages)
+
         st.rerun()
 
 
 # Handle chat input and return hybrid summary
 if prompt:
     raw_text = prompt
-    
+    start_time = time.time() 
+
     summary_dict = hybrid_summary_hierarchical(raw_text)
     
     st.session_state.messages.append({
@@ -425,17 +411,6 @@ if prompt:
 
     # Start building preview
     preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
-
-    # Force order: Facts → Arguments → Judgment → Other
-    # for section in ["Facts", "Arguments", "Judgment", "Other"]:
-    #     if section in summary_dict:
-    #         extractive = summary_dict[section].get("extractive", "").strip()
-    #         abstractive = summary_dict[section].get("abstractive", "").strip()
-
-    #         preview_text += f"### 📘 {section} Section\n"
-    #         preview_text += f"📌 **Extractive Summary:**\n{extractive if extractive else '_No content extracted._'}\n\n"
-    #         preview_text += f"🔍 **Abstractive Summary:**\n{abstractive if abstractive else '_No summary generated._'}\n\n"
-
 
     for section in ["Facts", "Arguments", "Judgment", "Other"]:
         if section in summary_dict:
@@ -457,10 +432,18 @@ if prompt:
     with st.chat_message("assistant", avatar=BOT_AVATAR):
         display_with_typing_effect(clean_text(preview_text), speed=0)
 
+    # Show processing time after the summary
+    processing_time = round(time.time() - start_time, 2)
+    st.session_state["last_response_time"] = processing_time
+
+    if "last_response_time" in st.session_state:
+        st.info(f"⏱️ Response generated in **{st.session_state['last_response_time']} seconds**.")
+
     st.session_state.messages.append({
         "role": "assistant",
         "content": clean_text(preview_text)
     })
     
     save_chat_history(st.session_state.messages)
+
     st.rerun()

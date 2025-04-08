@@ -26,7 +26,7 @@ if sys.platform.startswith("win"):
 
 st.set_page_config(page_title="Legal Document Summarizer", layout="wide")
 
-st.title("📄 Legal Document Summarizer (stage 1 zero shot)")
+st.title("📄 Legal Document Summarizer (stage 4 )")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
