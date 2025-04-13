@@ -18,6 +18,9 @@ nltk.download('punkt_tab')
 from transformers import LEDTokenizer, LEDForConditionalGeneration
 from transformers import pipeline
 import asyncio
+import dateutil.parser
+from collections import defaultdict
+
 import sys
 # Fix for RuntimeError: no running event loop on Windows
 if sys.platform.startswith("win"):
@@ -26,7 +29,7 @@ if sys.platform.startswith("win"):
 
 st.set_page_config(page_title="Legal Document Summarizer", layout="wide")
 
-st.title("📄 Legal Document Summarizer (stage 4 )")
+st.title("📄 Legal Document Summarizer (Timeline )")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -89,7 +92,7 @@ def load_local_zero_shot_classifier():
 local_classifier = load_local_zero_shot_classifier()
 
 
-SECTION_LABELS = ["Facts", "Arguments", "Judgment", "Other"]
+SECTION_LABELS = ["Facts", "Arguments", "Judgement", "Others"]
 
 def classify_chunk(text):
     result = local_classifier(text, candidate_labels=SECTION_LABELS)
@@ -98,7 +101,7 @@ def classify_chunk(text):
 
 # NEW: NLP-based sectioning using zero-shot classification
 def section_by_zero_shot(text):
-    sections = {"Facts": "", "Arguments": "", "Judgment": "", "Other": ""}
+    sections = {"Facts": "", "Arguments": "", "Judgment": "", "Others": ""}
     sentences = sent_tokenize(text)
     chunk = ""
 
@@ -110,7 +113,7 @@ def section_by_zero_shot(text):
             # 👇 Normalize label (title case and fallback)
             label = label.capitalize()
             if label not in sections:
-                label = "Other"
+                label = "Others"
             sections[label] += chunk + "\n"
             chunk = ""
 
@@ -226,6 +229,33 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
 
 
 
+
+def extract_timeline(text):
+    sentences = sent_tokenize(text)
+    timeline = []
+
+    for sentence in sentences:
+        try:
+            # Try parsing each word for a date
+            for word in sentence.split():
+                try:
+                    parsed_date = dateutil.parser.parse(word, fuzzy=False, dayfirst=True)
+                    timeline.append((parsed_date.date(), sentence.strip()))
+                    break
+                except Exception:
+                    continue
+        except Exception:
+            continue
+
+    # Remove duplicates and sort by date
+    unique_timeline = list(set(timeline))
+    sorted_timeline = sorted(unique_timeline, key=lambda x: x[0])
+
+    return sorted_timeline
+
+
+
+
 def hybrid_summary_hierarchical(text, top_ratio=0.8):
     cleaned_text = clean_text(text)
     sections = section_by_zero_shot(cleaned_text)
@@ -323,7 +353,7 @@ def role_based_filter(section, summary, role):
         "abstractive": ""
     }
 
-    if role == "Judge" and section in ["Judgment", "Facts"]:
+    if role == "Judge" and section in ["Judgement", "Facts"]:
         filtered_summary = summary
     elif role == "Lawyer" and section in ["Arguments", "Facts"]:
         filtered_summary = summary
@@ -356,7 +386,7 @@ if uploaded_file:
         preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
 
         
-        for section in ["Facts", "Arguments", "Judgment", "Other"]:
+        for section in ["Facts", "Arguments", "Judgement", "Others"]:
             if section in summary_dict:
 
                 filtered = role_based_filter(section, summary_dict[section], user_role)
@@ -375,6 +405,17 @@ if uploaded_file:
         # Display in chat
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(clean_text(preview_text), speed=0)
+
+        # Stage 5: Show Timeline
+        timeline_data = extract_timeline(raw_text)
+
+        if timeline_data:
+            st.subheader("🗓️ Timeline of Events")
+            for date, event in timeline_data:
+                with st.expander(f"{date.strftime('%Y-%m-%d')}"):
+                    st.write(f"**Event:** {event}")
+        else:
+            st.info("No significant timeline events detected.")
 
         # Show processing time after the summary
         processing_time = round(time.time() - start_time, 2)
@@ -412,7 +453,7 @@ if prompt:
     # Start building preview
     preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
 
-    for section in ["Facts", "Arguments", "Judgment", "Other"]:
+    for section in ["Facts", "Arguments", "Judgement", "Others"]:
         if section in summary_dict:
             
             filtered = role_based_filter(section, summary_dict[section], user_role)
@@ -431,6 +472,17 @@ if prompt:
     # Display in chat
     with st.chat_message("assistant", avatar=BOT_AVATAR):
         display_with_typing_effect(clean_text(preview_text), speed=0)
+
+    # Stage 5: Show Timeline
+    timeline_data = extract_timeline(raw_text)
+
+    if timeline_data:
+        st.subheader("🗓️ Timeline of Events")
+        for date, event in timeline_data:
+            with st.expander(f"{date.strftime('%Y-%m-%d')}"):
+                st.write(f"**Event:** {event}")
+    else:
+        st.info("No significant timeline events detected.")
 
     # Show processing time after the summary
     processing_time = round(time.time() - start_time, 2)
