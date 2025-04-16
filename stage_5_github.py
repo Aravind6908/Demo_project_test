@@ -7,6 +7,7 @@ import nltk
 import re
 import os
 import time  # already imported in your code
+import requests
 from dotenv import load_dotenv
 import torch
 from sentence_transformers import SentenceTransformer, util
@@ -18,7 +19,8 @@ from transformers import LEDTokenizer, LEDForConditionalGeneration
 from transformers import pipeline
 import asyncio
 import dateutil.parser
-from datetime import datetime
+from collections import defaultdict
+
 import sys
 # Fix for RuntimeError: no running event loop on Windows
 if sys.platform.startswith("win"):
@@ -239,102 +241,28 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
 
 
 
-# def extract_timeline(text):
-#     sentences = sent_tokenize(text)
-#     timeline = []
-
-#     for sentence in sentences:
-#         try:
-#             # Try parsing each word for a date
-#             for word in sentence.split():
-#                 try:
-#                     parsed_date = dateutil.parser.parse(word, fuzzy=False, dayfirst=True)
-#                     timeline.append((parsed_date.date(), sentence.strip()))
-#                     break
-#                 except Exception:
-#                     continue
-#         except Exception:
-#             continue
-
-#     # Remove duplicates and sort by date
-#     unique_timeline = list(set(timeline))
-#     sorted_timeline = sorted(unique_timeline, key=lambda x: x[0])
-
-#     return sorted_timeline
-
-# def extract_timeline(text):
-#     from datetime import datetime
-#     sentences = sent_tokenize(text)
-#     timeline = []
-
-#     for sentence in sentences:
-#         try:
-#             # Try fuzzy parsing on the whole sentence
-#             parsed = dateutil.parser.parse(sentence, fuzzy=True)
-            
-#             # Allow only realistic date ranges
-#             if 1900 <= parsed.year <= 2100:
-#                 timeline.append((parsed.date(), sentence.strip()))
-#         except Exception:
-#             continue
-
-#     # Remove duplicates and sort
-#     unique_timeline = list(set(timeline))
-#     return sorted(unique_timeline, key=lambda x: x[0])
-
-
-# def extract_timeline(text):
-#     from datetime import datetime
-#     sentences = sent_tokenize(text)
-#     timeline = []
-
-#     for sentence in sentences:
-#         try:
-#             parsed = dateutil.parser.parse(sentence, fuzzy=True)
-            
-#             # Only accept years in a valid range
-#             if 1900 <= parsed.year <= datetime.now().year + 5:  # Allow a few years ahead
-#                 # Reject misleading years like "1415", "0484" etc.
-#                 if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:  # Adjust as needed
-#                     continue
-
-#                 timeline.append((parsed.date(), sentence.strip()))
-#         except Exception:
-#             continue
-
-#     unique_timeline = list(set(timeline))
-#     return sorted(unique_timeline, key=lambda x: x[0])
-
-
 def extract_timeline(text):
     sentences = sent_tokenize(text)
     timeline = []
 
     for sentence in sentences:
         try:
-            # Try fuzzy parsing on the sentence
-            parsed = dateutil.parser.parse(sentence, fuzzy=True)
-
-            # Validate year: exclude years before 1950 unless explicitly whitelisted
-            current_year = datetime.now().year
-            if 1900 <= parsed.year <= current_year + 5:
-                # Additional filtering: discard misleading past years unless contextually valid
-                if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:
+            # Try parsing each word for a date
+            for word in sentence.split():
+                try:
+                    parsed_date = dateutil.parser.parse(word, fuzzy=False, dayfirst=True)
+                    timeline.append((parsed_date.date(), sentence.strip()))
+                    break
+                except Exception:
                     continue
-
-                # Further validation: ignore obviously wrong patterns like years starting with 0
-                if re.match(r"^0\d{3}$", str(parsed.year)):
-                    continue
-
-                # Passed all checks
-                timeline.append((parsed.date(), sentence.strip()))
         except Exception:
             continue
 
-    # Remove duplicates and sort
+    # Remove duplicates and sort by date
     unique_timeline = list(set(timeline))
-    return sorted(unique_timeline, key=lambda x: x[0])
+    sorted_timeline = sorted(unique_timeline, key=lambda x: x[0])
 
+    return sorted_timeline
 
 
 def format_timeline_for_chat(timeline_data):
@@ -590,6 +518,5 @@ if prompt and not st.session_state.chat_prompt_processed:
 
     save_chat_history(st.session_state.messages)
     st.session_state.chat_prompt_processed = True
-
 
 
