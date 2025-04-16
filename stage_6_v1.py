@@ -512,7 +512,7 @@ def role_based_filter(section, summary, role):
 
 # Embedding for chunking
 
-from nltk.tokenize import sent_tokenize
+
 
 def chunk_text(text, max_tokens=100):
     sentences = sent_tokenize(text)
