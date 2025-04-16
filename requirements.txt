@@ -9,4 +9,6 @@ nltk
 requests
 torch
 torchvision
-
+python-dateutil
+faiss-cpu
+faiss-gpu
