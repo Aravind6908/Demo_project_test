@@ -1,0 +1,93 @@
+[
+    {
+      "document_id": "case1",
+      "query": "What is the main legal issue discussed in the case?",
+      "ground_truth_answer": "The main legal issue is whether Section 5(4) of the Taxation on Income (Investigation Commission) Act, 1947 violates Article 14 of the Constitution by allowing discriminatory and arbitrary procedures for investigating tax evasion, thus making it void and unenforceable after the Constitution came into force."
+    },
+    {
+      "document_id": "case1",
+      "query": "Which court delivered the judgment, and who was the presiding judge?",
+      "ground_truth_answer": "The judgment was delivered by the Supreme Court of India. The presiding judge was Chief Justice Mehr Chand Mahajan, who delivered the opinion of the Court."
+    },
+    {
+      "document_id": "case1",
+      "query": "What are the Civil Appeal or SLP numbers associated with this case?",
+      "ground_truth_answer": "The case is registered as Petition No. 196 of 1954 under Article 32 of the Constitution of India."
+    },
+    {
+      "document_id": "case1",
+      "query": "Who are the parties involved in the case?",
+      "ground_truth_answer": "The petitioner is Suraj Mall Mohta & Co. Ltd., represented by P. R. Das and others. The respondents include the Union of India and the Taxation on Income (Investigation Commission), represented by Solicitor General C. K. Daphtary."
+    },
+    {
+      "document_id": "case1",
+      "query": "What statutory or constitutional provisions are referenced?",
+      "ground_truth_answer": "The case references the Taxation on Income (Investigation Commission) Act, 1947, specifically Sections 5(1), 5(4), 6, 7, and 8; the Indian Income Tax Act, 1922 including Sections 34, 31, 32, 33, 66, 66A; and Articles 14 and 20(3) of the Constitution of India."
+    },
+    {
+      "document_id": "case1",
+      "query": "What orders were passed by the lower courts before reaching this court?",
+      "ground_truth_answer": "No orders were passed by lower courts; the case was filed directly before the Supreme Court under Article 32 of the Constitution."
+    },
+    {
+      "document_id": "case1",
+      "query": "What is the timeline of legal events in this case?",
+      "ground_truth_answer": "The initial reference to the Commission was made on 9 September 1953; the notice to the petitioner was issued on 15 September 1953; and the writ petition under Article 32 was filed on 12 April 1954. The judgment was delivered on May 28, 1954."
+    },
+    {
+      "document_id": "case1",
+      "query": "What was the direction given by the High Court?",
+      "ground_truth_answer": "There is no High Court direction in this case; the matter was brought directly before the Supreme Court under its original jurisdiction."
+    },
+    {
+      "document_id": "case1",
+      "query": "How much time was given to conclude the enquiry?",
+      "ground_truth_answer": "The document does not specify a defined period of time allotted for the conclusion of the enquiry by the Commission."
+    },
+    {
+      "document_id": "case1",
+      "query": "What were the findings of the appellate authority before the Supreme Court's intervention?",
+      "ground_truth_answer": "No appellate authority findings are mentioned; the petition was made directly under Article 32 to the Supreme Court."
+    },
+    {
+      "document_id": "case1",
+      "query": "Was there any breach of natural justice mentioned?",
+      "ground_truth_answer": "Yes, the Court found that the procedure under the Act denied equal procedural safeguards and access to evidence, particularly under Section 7(4), which limited the ability of the petitioner to inspect or obtain favorable material. This amounted to a breach of natural justice."
+    },
+    {
+      "document_id": "case1",
+      "query": "Were the affected parties given a chance to be heard?",
+      "ground_truth_answer": "No, the affected parties were not given a full opportunity to be heard. They were denied access to full records and materials, including their own documents held by the Commission, limiting their ability to mount an effective defense."
+    },
+    {
+      "document_id": "case1",
+      "query": "What did the Supreme Court decide in this case?",
+      "ground_truth_answer": "The Supreme Court declared Section 5(4) of the Act void and unenforceable for violating Article 14, and directed that the Investigation Commission be prohibited from taking any further proceedings against the petitioner under the impugned Act."
+    },
+    {
+      "document_id": "case1",
+      "query": "Were the previous orders set aside or upheld?",
+      "ground_truth_answer": "There were no lower court orders to set aside. The Supreme Court directly issued a writ prohibiting further proceedings under the Act."
+    },
+    {
+      "document_id": "case1",
+      "query": "What relief was granted to the petitioners?",
+      "ground_truth_answer": "The Court granted a writ prohibiting the Investigation Commission from taking further action under the Act against the petitioner and awarded costs to the petitioner."
+    },
+    {
+      "document_id": "case1",
+      "query": "What directions were given for further action?",
+      "ground_truth_answer": "The Court directed that a writ be issued prohibiting the Investigation Commission from proceeding against the petitioner under the provisions of the Taxation on Income (Investigation Commission) Act, 1947."
+    },
+    {
+      "document_id": "case1",
+      "query": "Does the judgment reference any landmark cases or precedents?",
+      "ground_truth_answer": "No specific landmark cases or precedents are cited in the text of the judgment."
+    },
+    {
+      "document_id": "case1",
+      "query": "What principles of administrative law are discussed?",
+      "ground_truth_answer": "The judgment discusses the principles of equality before the law and non-discrimination under Article 14, and emphasizes that individuals similarly situated must be treated alike with equal procedural protections. It also critiques the lack of appeal and inspection rights under the Act as violating fair procedure."
+    }
+  ]
+  
