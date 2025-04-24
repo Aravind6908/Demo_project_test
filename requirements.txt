@@ -11,3 +11,14 @@ torch
 torchvision
 faiss-cpu
 python-dateutil
+################################################################
+fitz
+numpy
+openai
+requests
+rank-bm25
+scikit-learn
+networkx
+matplotlib
+tqdm
+Pillow
