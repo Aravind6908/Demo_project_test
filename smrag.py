@@ -48,7 +48,7 @@ if "last_prompt_hash" not in st.session_state:
     st.session_state.last_prompt_hash = None
 
 
-st.title("📄 Legal Document Summarizer (Simple RAG with evaluation results)")
+st.title("📄 Legal Document Summarizer (Simple RAG without timeline code)")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -258,49 +258,6 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
     return " ".join(summaries)
 
 
-
-def extract_timeline(text):
-    sentences = sent_tokenize(text)
-    timeline = []
-
-    for sentence in sentences:
-        try:
-            # Try fuzzy parsing on the sentence
-            parsed = dateutil.parser.parse(sentence, fuzzy=True)
-
-            # Validate year: exclude years before 1950 unless explicitly whitelisted
-            current_year = datetime.now().year
-            if 1900 <= parsed.year <= current_year + 5:
-                # Additional filtering: discard misleading past years unless contextually valid
-                if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:
-                    continue
-
-                # Further validation: ignore obviously wrong patterns like years starting with 0
-                if re.match(r"^0\d{3}$", str(parsed.year)):
-                    continue
-
-                # Passed all checks
-                timeline.append((parsed.date(), sentence.strip()))
-        except Exception:
-            continue
-
-    # Remove duplicates and sort
-    unique_timeline = list(set(timeline))
-    return sorted(unique_timeline, key=lambda x: x[0])
-
-
-
-def format_timeline_for_chat(timeline_data):
-    if not timeline_data:
-        return "_No significant timeline events detected._"
-    
-    formatted = "🗓️ **Timeline of Events**\n\n"
-    for date, event in timeline_data:
-        formatted += f"**{date.strftime('%Y-%m-%d')}**: {event}\n\n"
-    return formatted.strip()
-
-
-
 def hybrid_summary_hierarchical(text, top_ratio=0.8):
     cleaned_text = clean_text(text)
     sections = section_by_zero_shot(cleaned_text)
@@ -392,8 +349,9 @@ def rag_query_response(prompt, embedding_text):
     context_block = "\n\n".join([f"Context {i+1}:\n{chunk}" for i, chunk in enumerate(top_chunks)])
     user_prompt = f"{context_block}\n\nQuestion: {prompt}"
     system_instruction = (
-        "You are an AI assistant that strictly answers based on the given context. "
-        "If the answer cannot be derived directly from the context, respond: 'I do not have enough information to answer that.'"
+        "You are an AI assistant. Always try to answer from the provided context. "
+        "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
+        "rather than saying you lack information."
     )
     return generate_response(system_instruction, user_prompt)
 
@@ -464,7 +422,7 @@ def get_file_hash(file):
 
 # Function to prepare text for embedding
 # This function combines the extractive and abstractive summaries into a single string for embedding
-def prepare_text_for_embedding(summary_dict, timeline_data):
+def prepare_text_for_embedding(summary_dict):
     combined_chunks = []
 
     for section, content in summary_dict.items():
@@ -474,12 +432,6 @@ def prepare_text_for_embedding(summary_dict, timeline_data):
             combined_chunks.append(f"{section} - Extractive Summary:\n{ext}")
         if abs:
             combined_chunks.append(f"{section} - Abstractive Summary:\n{abs}")
-
-    if timeline_data:
-    
-        combined_chunks.append("Timeline of Events:\n")
-        for date, event in timeline_data:
-            combined_chunks.append(f"{date.strftime('%Y-%m-%d')}: {event.strip()}")
 
     return "\n\n".join(combined_chunks)
 
@@ -553,8 +505,8 @@ if uploaded_file:
         start_time = time.time()
         raw_text = extract_text(uploaded_file)
         summary_dict = hybrid_summary_hierarchical(raw_text)
-        timeline_data = extract_timeline(clean_text(raw_text))
-        embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
+        # timeline_data = extract_timeline(clean_text(raw_text))
+        embedding_text = prepare_text_for_embedding(summary_dict)
 
         # Generate and display RAG-based summary
 
@@ -579,51 +531,6 @@ if uploaded_file:
         save_chat_history(st.session_state.messages)
 
 
-# if prompt:
-#     word_count = len(prompt.split())
-#     # Document ingestion if long and not yet processed
-#     if word_count > 30 and not st.session_state.processed:
-#         raw_text = prompt
-#         start_time = time.time()
-#         summary_dict = hybrid_summary_hierarchical(raw_text)
-#         timeline_data = extract_timeline(clean_text(raw_text))
-#         embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
-
-#         # Save document context for future queries
-#         st.session_state.document_context = embedding_text
-#         st.session_state.processed = True
-
-#         # Initial role-based summary
-#         role_prompt = f"As a {user_role}, summarize the document focusing on facts, arguments, judgments, plus timeline of events."
-#         initial_summary = rag_query_response(role_prompt, embedding_text)
-#         st.session_state.messages.append({"role": "user", "content": "📥 Document ingested"})
-#         st.session_state.messages.append({"role": "assistant", "content": initial_summary})
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             display_with_typing_effect(initial_summary)
-#         # Step 10: Show time
-#         processing_time = round((time.time() - start_time) / 60, 2)
-#         st.info(f"⏱️ Response generated in **{processing_time} minutes**.")
-#         save_chat_history(st.session_state.messages)
-
-#     # Querying phase: use existing document context
-#     elif st.session_state.processed:
-#         if not st.session_state.document_context:
-#             st.warning("⚠️ No document context found.  Please upload or paste your document first (30+ words).")
-#         else:
-#             answer = rag_query_response(prompt, st.session_state.document_context)
-       
-#         st.session_state.messages.append({"role": "user", "content": prompt})
-#         st.session_state.messages.append({"role": "assistant", "content": answer})
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             display_with_typing_effect(answer)
-#         save_chat_history(st.session_state.messages)
-
-#     # Prompt too short and no document yet
-#     else:
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             st.markdown("❗ Please first paste your document (more than 30 words), then ask questions.")
-
-
 if prompt:
     words = prompt.split()
     word_count = len(words)
@@ -641,8 +548,8 @@ if prompt:
         start_time = time.time()
 
         summary_dict   = hybrid_summary_hierarchical(raw_text)
-        timeline_data  = extract_timeline(clean_text(raw_text))
-        emb_text       = prepare_text_for_embedding(summary_dict, timeline_data)
+        # timeline_data  = extract_timeline(clean_text(raw_text))
+        emb_text       = prepare_text_for_embedding(summary_dict)
 
         # overwrite context
         st.session_state.document_context = emb_text

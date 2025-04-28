@@ -22,3 +22,6 @@ networkx
 matplotlib
 tqdm
 Pillow
+transformers
+accelerate
+sentencepiece
