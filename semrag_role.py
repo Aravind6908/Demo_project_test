@@ -48,7 +48,7 @@ if "last_prompt_hash" not in st.session_state:
     st.session_state.last_prompt_hash = None
 
 
-st.title("📄 Legal Document Summarizer (Simple RAG with evaluation results)")
+st.title("📄 Legal Document Summarizer (Semantic RAG)")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -259,48 +259,6 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
 
 
 
-def extract_timeline(text):
-    sentences = sent_tokenize(text)
-    timeline = []
-
-    for sentence in sentences:
-        try:
-            # Try fuzzy parsing on the sentence
-            parsed = dateutil.parser.parse(sentence, fuzzy=True)
-
-            # Validate year: exclude years before 1950 unless explicitly whitelisted
-            current_year = datetime.now().year
-            if 1900 <= parsed.year <= current_year + 5:
-                # Additional filtering: discard misleading past years unless contextually valid
-                if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:
-                    continue
-
-                # Further validation: ignore obviously wrong patterns like years starting with 0
-                if re.match(r"^0\d{3}$", str(parsed.year)):
-                    continue
-
-                # Passed all checks
-                timeline.append((parsed.date(), sentence.strip()))
-        except Exception:
-            continue
-
-    # Remove duplicates and sort
-    unique_timeline = list(set(timeline))
-    return sorted(unique_timeline, key=lambda x: x[0])
-
-
-
-def format_timeline_for_chat(timeline_data):
-    if not timeline_data:
-        return "_No significant timeline events detected._"
-    
-    formatted = "🗓️ **Timeline of Events**\n\n"
-    for date, event in timeline_data:
-        formatted += f"**{date.strftime('%Y-%m-%d')}**: {event}\n\n"
-    return formatted.strip()
-
-
-
 def hybrid_summary_hierarchical(text, top_ratio=0.8):
     cleaned_text = clean_text(text)
     sections = section_by_zero_shot(cleaned_text)
@@ -358,23 +316,55 @@ def chunk_text_custom(text, n=1000, overlap=200):
         chunks.append(text[i:i + n])
     return chunks
 
+# def create_embeddings(text_chunks, model="BAAI/bge-en-icl"):
+#     response = client.embeddings.create(
+#         model=model,
+#         input=text_chunks
+#     )
+#     return response.data
+
+
+# … keep all your imports as-is, but add:
+
+
+def get_embedding(text, model="BAAI/bge-en-icl"):
+    """
+    From your notebook:
+    Creates an embedding for the given text chunk using the BGE-ICL model.
+    """
+    resp = client.embeddings.create(model=model, input=text)
+    return np.array(resp.data[0].embedding)
+
 def create_embeddings(text_chunks, model="BAAI/bge-en-icl"):
-    response = client.embeddings.create(
-        model=model,
-        input=text_chunks
-    )
-    return response.data
+    """
+    Batch the get_embedding call over your chunks.
+    Returns a list of numpy arrays.
+    """
+    return [get_embedding(chunk, model=model) for chunk in text_chunks]
+
 
 def cosine_similarity(vec1, vec2):
     return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
 
-def semantic_search(query, text_chunks, chunk_embeddings, k=5):
-    query_embedding = create_embeddings([query])[0].embedding
-    scores = [(i, cosine_similarity(np.array(query_embedding), np.array(emb.embedding))) for i, emb in enumerate(chunk_embeddings)]
-    top_indices = [idx for idx, _ in sorted(scores, key=lambda x: x[1], reverse=True)[:k]]
-    return [text_chunks[i] for i in top_indices]
+# def semantic_search(query, text_chunks, chunk_embeddings, k=5):
+#     query_embedding = create_embeddings([query])[0].embedding
+#     scores = [(i, cosine_similarity(np.array(query_embedding), np.array(emb.embedding))) for i, emb in enumerate(chunk_embeddings)]
+#     top_indices = [idx for idx, _ in sorted(scores, key=lambda x: x[1], reverse=True)[:k]]
+#     return [text_chunks[i] for i in top_indices]
 
+
+def semantic_search(query, text_chunks, chunk_embeddings, k=5):
+    """
+    Compute cosine similarity between the query embedding and each chunk embedding,
+    then pick the top-k chunks.
+    """
+    q_emb = get_embedding(query)
+    # simple cosine:
+    def cosine(a, b): return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    scores = [cosine(q_emb, emb) for emb in chunk_embeddings]
+    top_idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+    return [text_chunks[i] for i in top_idxs]
 
 
 def generate_response(system_prompt, user_message, model="meta-llama/Llama-3.2-3B-Instruct"):
@@ -385,19 +375,32 @@ def generate_response(system_prompt, user_message, model="meta-llama/Llama-3.2-3
     ).choices[0].message.content
 
 
+# def rag_query_response(prompt, embedding_text):
+#     chunks = chunk_text_custom(embedding_text)
+#     chunk_embeddings = create_embeddings(chunks)
+#     top_chunks = semantic_search(prompt, chunks, chunk_embeddings, k=5)
+#     context_block = "\n\n".join([f"Context {i+1}:\n{chunk}" for i, chunk in enumerate(top_chunks)])
+#     user_prompt = f"{context_block}\n\nQuestion: {prompt}"
+#     system_instruction = (
+#         "You are an AI assistant. Always try to answer from the provided context. "
+#         "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
+#         "rather than saying you lack information."
+#     )
+#     return generate_response(system_instruction, user_prompt)
+
 def rag_query_response(prompt, embedding_text):
     chunks = chunk_text_custom(embedding_text)
-    chunk_embeddings = create_embeddings(chunks)
-    top_chunks = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-    context_block = "\n\n".join([f"Context {i+1}:\n{chunk}" for i, chunk in enumerate(top_chunks)])
-    user_prompt = f"{context_block}\n\nQuestion: {prompt}"
-    system_instruction = (
-        "You are an AI assistant that strictly answers based on the given context. "
-        "If the answer cannot be derived directly from the context, respond: 'I do not have enough information to answer that.'"
+    chunk_embeddings = create_embeddings(chunks)          # now list of np.arrays
+    top_chunks      = semantic_search(prompt, chunks, chunk_embeddings, k=5)
+    context_block   = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(top_chunks))
+
+    sys_inst = (
+         "You are an AI assistant. Always try to answer from the provided context. "
+        "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
+        "rather than saying you lack information."
     )
-    return generate_response(system_instruction, user_prompt)
-
-
+    user_p = f"{context_block}\n\nQuestion: {prompt}"
+    return generate_response(sys_inst, user_p)
 
 
 #######################################################################################################################
@@ -464,7 +467,7 @@ def get_file_hash(file):
 
 # Function to prepare text for embedding
 # This function combines the extractive and abstractive summaries into a single string for embedding
-def prepare_text_for_embedding(summary_dict, timeline_data):
+def prepare_text_for_embedding(summary_dict):
     combined_chunks = []
 
     for section, content in summary_dict.items():
@@ -474,12 +477,6 @@ def prepare_text_for_embedding(summary_dict, timeline_data):
             combined_chunks.append(f"{section} - Extractive Summary:\n{ext}")
         if abs:
             combined_chunks.append(f"{section} - Abstractive Summary:\n{abs}")
-
-    if timeline_data:
-    
-        combined_chunks.append("Timeline of Events:\n")
-        for date, event in timeline_data:
-            combined_chunks.append(f"{date.strftime('%Y-%m-%d')}: {event.strip()}")
 
     return "\n\n".join(combined_chunks)
 
@@ -553,8 +550,8 @@ if uploaded_file:
         start_time = time.time()
         raw_text = extract_text(uploaded_file)
         summary_dict = hybrid_summary_hierarchical(raw_text)
-        timeline_data = extract_timeline(clean_text(raw_text))
-        embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
+        # timeline_data = extract_timeline(clean_text(raw_text))
+        embedding_text = prepare_text_for_embedding(summary_dict)
 
         # Generate and display RAG-based summary
 
@@ -579,105 +576,103 @@ if uploaded_file:
         save_chat_history(st.session_state.messages)
 
 
-# if prompt:
-#     word_count = len(prompt.split())
-#     # Document ingestion if long and not yet processed
-#     if word_count > 30 and not st.session_state.processed:
-#         raw_text = prompt
-#         start_time = time.time()
-#         summary_dict = hybrid_summary_hierarchical(raw_text)
-#         timeline_data = extract_timeline(clean_text(raw_text))
-#         embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
-
-#         # Save document context for future queries
-#         st.session_state.document_context = embedding_text
-#         st.session_state.processed = True
-
-#         # Initial role-based summary
-#         role_prompt = f"As a {user_role}, summarize the document focusing on facts, arguments, judgments, plus timeline of events."
-#         initial_summary = rag_query_response(role_prompt, embedding_text)
-#         st.session_state.messages.append({"role": "user", "content": "📥 Document ingested"})
-#         st.session_state.messages.append({"role": "assistant", "content": initial_summary})
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             display_with_typing_effect(initial_summary)
-#         # Step 10: Show time
-#         processing_time = round((time.time() - start_time) / 60, 2)
-#         st.info(f"⏱️ Response generated in **{processing_time} minutes**.")
-#         save_chat_history(st.session_state.messages)
-
-#     # Querying phase: use existing document context
-#     elif st.session_state.processed:
-#         if not st.session_state.document_context:
-#             st.warning("⚠️ No document context found.  Please upload or paste your document first (30+ words).")
-#         else:
-#             answer = rag_query_response(prompt, st.session_state.document_context)
-       
-#         st.session_state.messages.append({"role": "user", "content": prompt})
-#         st.session_state.messages.append({"role": "assistant", "content": answer})
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             display_with_typing_effect(answer)
-#         save_chat_history(st.session_state.messages)
-
-#     # Prompt too short and no document yet
-#     else:
-#         with st.chat_message("assistant", avatar=BOT_AVATAR):
-#             st.markdown("❗ Please first paste your document (more than 30 words), then ask questions.")
-
-
 if prompt:
     words = prompt.split()
     word_count = len(words)
-
-    # compute a quick hash to detect “new” direct-paste
     prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()
 
-    # --- 1) LONG prompts always re-ingest as a NEW doc ---
+    # 1) LONG prompts – echo first, then summarize
     if word_count > 30 and prompt_hash != st.session_state.last_prompt_hash:
-        # mark this as our new “last prompt”
+        # mark new prompt
         st.session_state.last_prompt_hash = prompt_hash
 
-        # ingest exactly like you do for an uploaded file
+        # raw_text is just the prompt text
         raw_text = prompt
+
+        st.session_state.messages.append({
+            "role": "user",
+            "content": f"📥 **Pasted Document Text:**\n\n{limit_text(raw_text, word_limit=500)}"
+        })
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(limit_text(raw_text, word_limit=500))
+
         start_time = time.time()
+        summary_dict = hybrid_summary_hierarchical(raw_text)
+        emb_text     = prepare_text_for_embedding(summary_dict)
 
-        summary_dict   = hybrid_summary_hierarchical(raw_text)
-        timeline_data  = extract_timeline(clean_text(raw_text))
-        emb_text       = prepare_text_for_embedding(summary_dict, timeline_data)
-
-        # overwrite context
         st.session_state.document_context = emb_text
-        st.session_state.processed = True
+        st.session_state.processed        = True
 
-        # produce your initial summary
         role_prompt = (
             f"As a {user_role}, summarize the document focusing on facts, "
             "arguments, judgments, plus timeline of events."
         )
         initial_summary = rag_query_response(role_prompt, emb_text)
 
-        st.session_state.messages.append({"role":"user",    "content":"📥 Document ingested"})
-        st.session_state.messages.append({"role":"assistant","content":initial_summary})
+        # 3️⃣ Append & display the assistant’s summary with typing effect
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": initial_summary
+        })
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(initial_summary)
 
         st.info(f"⏱️ Summary generated in {round((time.time()-start_time)/60,2)} minutes")
         save_chat_history(st.session_state.messages)
 
-
-    # --- 2) SHORT prompts are queries against the last context ---
+    # 2) SHORT prompts: normal RAG against last context
     elif word_count <= 30 and st.session_state.processed:
+        
+        role_query = f"As a {user_role}, {prompt}"
+        answer     = rag_query_response(role_query, st.session_state.document_context)
         answer = rag_query_response(prompt, st.session_state.document_context)
-        st.session_state.messages.append({"role":"user",     "content":prompt})
-        st.session_state.messages.append({"role":"assistant", "content":answer})
+        st.session_state.messages.append({"role": "user",    "content": prompt})
+        st.session_state.messages.append({"role": "assistant","content": answer})
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(answer)
         save_chat_history(st.session_state.messages)
 
-    # --- 3) anything else: ask them to paste something first ---
+    # 3) Ingest prompt to start
     else:
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             st.markdown("❗ Paste at least 30 words of your document to ingest it first.")
 
+
+# if prompt:
+#      words = prompt.split()
+#      word_count = len(words)
+#      prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()
+
+#      # 1) LONG prompts – echo first, then summarize
+#      if word_count > 30 and prompt_hash != st.session_state.last_prompt_hash:
+         
+#          # … your existing “echo raw_text” + summarization logic …
+
+#          role_prompt = (
+#              f"As a {user_role}, summarize the document focusing on facts, "
+#              "arguments, judgments, plus timeline of events."
+#          )
+#          initial_summary = rag_query_response(role_prompt, emb_text)
+#          initial_summary = rag_query_response(role_prompt, emb_text)
+#          # … display, save, etc. …
+
+#      # 2) SHORT prompts: normal RAG against last context
+#      elif word_count <= 30 and st.session_state.processed:
+#          answer = rag_query_response(prompt, st.session_state.document_context)
+#      elif word_count <= 30 and st.session_state.processed:
+#     # prefix the role onto every short form query
+#         role_query = f"As a {user_role}, {prompt}"
+#         answer     = rag_query_response(role_query, st.session_state.document_context)
+#         st.session_state.messages.append({"role": "user",    "content": prompt})
+#         st.session_state.messages.append({"role": "assistant","content": answer})
+#         with st.chat_message("assistant", avatar=BOT_AVATAR):
+#             display_with_typing_effect(answer)
+#         save_chat_history(st.session_state.messages)
+
+#      # 3) Ingest prompt to start
+#      else:
+#          with st.chat_message("assistant", avatar=BOT_AVATAR):
+#              st.markdown("❗ Paste at least 30 words of your document to ingest it first.")
 
 
 ######################################################################################################################

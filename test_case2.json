@@ -1,7 +1,7 @@
 [
     {
       "document_id": "case2",
-      "query": "What is the judgment date?",
+      "query": "What is the main legal issue discussed in the case?",
       "ground_truth_answer": "The main legal issue concerns the mass disqualification of 1,415 members from a cooperative society without individual inquiry. The action was based on a general notice and an undisclosed Committee report. The appellants argued this violated principles of natural justice. The Supreme Court examined whether such a process was legally and procedurally fair under the Maharashtra Cooperative Societies Act, 1960."
       
     },
@@ -77,7 +77,7 @@
     },
     {
         "document_id": "case2",
-        "query": "What directions were given for further action?What directions were given for further action?",
+        "query": "What directions were given for further action?",
         "ground_truth_answer": "The Supreme Court gave the following directions for further action: The proceedings were restored to the Regional Joint Director (Sugar). The affected members must be given copies of the Committee’s scrutiny report, complaints, and supporting documents within one month. Members are allowed to submit their replies within one month after receiving the documents. The Regional Joint Director must hear the members individually and pass fresh orders within three months thereafter.No new show cause notice is required since the members have already appeared in the proceedings"
     },
     {
