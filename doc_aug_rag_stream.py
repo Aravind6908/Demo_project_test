@@ -20,7 +20,6 @@ import asyncio
 # import dateutil.parser
 from datetime import datetime
 import sys
-
 from openai import OpenAI
 import numpy as np
 
@@ -98,13 +97,16 @@ def clean_text(text):
 
 # LOADING MODELS FOR DIVIDING TEXT INTO SECTIONS
 
-HF_API_TOKEN = st.secrets["HF_API_TOKEN"]
-OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
-
+try:
+    HF_API_TOKEN = st.secrets["HF_API_TOKEN"]
+    OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
+except KeyError as e:
+    st.error(f"Missing secret: {e}.  \nGo to your Streamlit Cloud app → Settings → Secrets and add it.")
+    st.stop()
 
 client = OpenAI(
     base_url="https://api.studio.nebius.com/v1/",
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=OPENAI_API_KEY
 )
 
 # print("API Key:", os.getenv("OPENAI_API_KEY"))  # Temporary for debugging
