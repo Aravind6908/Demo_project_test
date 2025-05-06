@@ -443,22 +443,6 @@ def generate_response_from_context(query, context,
 
 
 
-def rag_query_response(prompt, embedding_text):
-    chunks = chunk_text_custom(embedding_text)
-    chunk_embeddings = create_embeddings(chunks)          # now list of np.arrays
-    top_chunks      = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-    context_block   = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(top_chunks))
-
-    sys_inst = (
-         "You are an AI assistant. Always try to answer from the provided context. "
-        "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
-        "rather than saying you lack information."
-    )
-    user_p = f"{context_block}\n\nQuestion: {prompt}"
-    return generate_response(sys_inst, user_p)
-
-
-
 
 #######################################################################################################################
 
