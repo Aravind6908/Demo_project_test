@@ -21,7 +21,6 @@ import dateutil.parser
 from datetime import datetime
 import sys
 
-
 from openai import OpenAI
 import numpy as np
 
@@ -49,37 +48,20 @@ if "last_prompt_hash" not in st.session_state:
     st.session_state.last_prompt_hash = None
 
 
-st.title("📄 Legal Document Summarizer (RAG without token)")
+st.title("📄 Legal Document Summarizer (Document Augmentation RAG)")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
 
-# # Load chat history
-# def load_chat_history():
-#     with shelve.open("chat_history") as db:
-#         return db.get("messages", [])
-
+# Load chat history
 def load_chat_history():
-    try:
-        with shelve.open("chat_history") as db:
-            msgs = db.get("messages", [])
-            return msgs or []           # force a list, never None
-    except Exception:
-        return []                     # on any error, just start fresh
+    with shelve.open("chat_history") as db:
+        return db.get("messages", [])
 
-
-# # Save chat history
-# def save_chat_history(messages):
-#     with shelve.open("chat_history") as db:
-#         db["messages"] = messages
-
+# Save chat history
 def save_chat_history(messages):
-    try:
-        with shelve.open("chat_history") as db:
-            db["messages"] = messages or []
-    except Exception:
-        pass
-
+    with shelve.open("chat_history") as db:
+        db["messages"] = messages
 
 # Function to limit text preview to 500 words
 def limit_text(text, word_limit=500):
@@ -120,34 +102,10 @@ def clean_text(text):
 load_dotenv()
 HF_API_TOKEN = os.getenv("HF_API_TOKEN")
 
-# client = OpenAI(
-#     base_url="https://api.studio.nebius.com/v1/",
-#     api_key=os.getenv("OPENAI_API_KEY")
-# )
-
-from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
-
-@st.cache_resource
-def load_local_chat():
-    tok = AutoTokenizer.from_pretrained("facebook/opt-350m")
-    model = AutoModelForCausalLM.from_pretrained(
-        "facebook/opt-350m",
-        torch_dtype=torch.float16,        # or torch.float32 if you have no half support
-        low_cpu_mem_usage=True            # HuggingFace helper to reduce memory footprint
-    )
-    # `device=-1` forces CPU
-    return pipeline(
-        "text-generation",
-        model=model,
-        tokenizer=tok,
-        device=-1,
-        max_new_tokens=256,
-        do_sample=False
-    )
-
-chat_gen = load_local_chat()
-
-
+client = OpenAI(
+    base_url="https://api.studio.nebius.com/v1/",
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 # print("API Key:", os.getenv("OPENAI_API_KEY"))  # Temporary for debugging
 
@@ -301,48 +259,6 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
 
 
 
-# def extract_timeline(text):
-#     sentences = sent_tokenize(text)
-#     timeline = []
-
-#     for sentence in sentences:
-#         try:
-#             # Try fuzzy parsing on the sentence
-#             parsed = dateutil.parser.parse(sentence, fuzzy=True)
-
-#             # Validate year: exclude years before 1950 unless explicitly whitelisted
-#             current_year = datetime.now().year
-#             if 1900 <= parsed.year <= current_year + 5:
-#                 # Additional filtering: discard misleading past years unless contextually valid
-#                 if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:
-#                     continue
-
-#                 # Further validation: ignore obviously wrong patterns like years starting with 0
-#                 if re.match(r"^0\d{3}$", str(parsed.year)):
-#                     continue
-
-#                 # Passed all checks
-#                 timeline.append((parsed.date(), sentence.strip()))
-#         except Exception:
-#             continue
-
-#     # Remove duplicates and sort
-#     unique_timeline = list(set(timeline))
-#     return sorted(unique_timeline, key=lambda x: x[0])
-
-
-
-# def format_timeline_for_chat(timeline_data):
-#     if not timeline_data:
-#         return "_No significant timeline events detected._"
-    
-#     formatted = "🗓️ **Timeline of Events**\n\n"
-#     for date, event in timeline_data:
-#         formatted += f"**{date.strftime('%Y-%m-%d')}**: {event}\n\n"
-#     return formatted.strip()
-
-
-
 def hybrid_summary_hierarchical(text, top_ratio=0.8):
     cleaned_text = clean_text(text)
     sections = section_by_zero_shot(cleaned_text)
@@ -366,125 +282,166 @@ def hybrid_summary_hierarchical(text, top_ratio=0.8):
     return structured_summary
 
 
-from sentence_transformers import SentenceTransformer
-
-@st.cache_resource
-def load_embedder():
-    return SentenceTransformer("all-MiniLM-L6-v2")
-
-embedder = load_embedder()
-
-import faiss
-import numpy as np
-
-
-def build_faiss_index(chunks):
-    embedder = load_embedder()
-    embeddings = embedder.encode(chunks, convert_to_tensor=False)
-    dimension = embeddings[0].shape[0]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(np.array(embeddings).astype("float32"))
-    st.session_state["embedder"] = embedder
-    return index, chunks  # ✅ Return both
-
-
-def retrieve_top_k(query, chunks, index, k=3):
-    query_vec = embedder.encode([query])
-    D, I = index.search(np.array(query_vec).astype("float32"), k)
-    return [chunks[i] for i in I[0]]
-
-
 def chunk_text_custom(text, n=1000, overlap=200):
     chunks = []
     for i in range(0, len(text), n - overlap):
         chunks.append(text[i:i + n])
     return chunks
 
-# def create_embeddings(text_chunks, model="BAAI/bge-en-icl"):
-#     response = client.embeddings.create(
-#         model=model,
-#         input=text_chunks
-#     )
-#     return response.data
-
-# at top
-from sentence_transformers import SentenceTransformer
-@st.cache_resource
-def load_embedder():
-    return SentenceTransformer("all-MiniLM-L6-v2")
-embedder = load_embedder()
-
-def create_embeddings(text_chunks, model=None):
-    # ignore the `model` arg, just do:
-    return embedder.encode(text_chunks, convert_to_tensor=False)
 
 
-def cosine_similarity(vec1, vec2):
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
+def get_embedding(text, model="BAAI/bge-en-icl"):
+    """
+    From your notebook:
+    Creates an embedding for the given text chunk using the BGE-ICL model.
+    """
+    resp = client.embeddings.create(model=model, input=text)
+    return np.array(resp.data[0].embedding)
 
 
-# def semantic_search(query, text_chunks, chunk_embeddings, k=5):
-#     query_embedding = create_embeddings([query])[0].embedding
-#     scores = [(i, cosine_similarity(np.array(query_embedding), np.array(emb.embedding))) for i, emb in enumerate(chunk_embeddings)]
-#     top_indices = [idx for idx, _ in sorted(scores, key=lambda x: x[1], reverse=True)[:k]]
-#     return [text_chunks[i] for i in top_indices]
 
 def semantic_search(query, text_chunks, chunk_embeddings, k=5):
-    # get the raw vector for the query:
-    query_embedding = create_embeddings([query])[0]
-
-    # compute cosine similarity against each chunk vector:
-    scores = [
-        (i, cosine_similarity(query_embedding, emb))
-        for i, emb in enumerate(chunk_embeddings)
-    ]
-
-    # pick the top‐k highest‐scoring indices:
-    top_indices = [idx for idx, _ in sorted(scores, key=lambda x: x[1], reverse=True)[:k]]
-    return [text_chunks[i] for i in top_indices]
+    """
+    Compute cosine similarity between the query embedding and each chunk embedding,
+    then pick the top-k chunks.
+    """
+    q_emb = get_embedding(query)
+    # simple cosine:
+    def cosine(a, b): return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
+    scores = [cosine(q_emb, emb) for emb in chunk_embeddings]
+    top_idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+    return [text_chunks[i] for i in top_idxs]
 
 
-
-# def generate_response(system_prompt, user_message, model="meta-llama/Llama-3.2-3B-Instruct"):
-#     return client.chat.completions.create(
-#         model=model,
-#         temperature=0,
-#         messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}]
-#     ).choices[0].message.content
-
-def generate_response(system_instruction, user_prompt):
-    full = system_instruction + "\n\n" + user_prompt
-    out = chat_gen(full)[0]["generated_text"]
-    # strip off the prompt if you like:
-    return out[len(full) :].strip()
+def generate_response(system_prompt, user_message, model="meta-llama/Llama-3.2-3B-Instruct"):
+    return client.chat.completions.create(
+        model=model,
+        temperature=0,
+        messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}]
+    ).choices[0].message.content
 
 
-# def rag_query_response(prompt, embedding_text):
-#     chunks = chunk_text_custom(embedding_text)
-#     chunk_embeddings = create_embeddings(chunks)
-#     top_chunks = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-#     context_block = "\n\n".join([f"Context {i+1}:\n{chunk}" for i, chunk in enumerate(top_chunks)])
-#     user_prompt = f"{context_block}\n\nQuestion: {prompt}"
-#     system_instruction = (
-#         "You are an AI assistant. Always try to answer from the provided context. "
-#         "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
-#         "rather than saying you lack information."
-#     )
-#     return generate_response(system_instruction, user_prompt)
-
-
-def rag_query_response(prompt, embedding_text):
-    chunks = chunk_text_custom(embedding_text)
-    chunk_embeddings = create_embeddings(chunks)   # you can keep using your BGE-ICL or swap that too
-    top_chunks = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-
-    context = "\n\n".join(f"[{i+1}] {c}" for i,c in enumerate(top_chunks))
-    sys_inst = (
-        "You are a legal assistant. Always answer from the contexts. "
-        "If unsure, restate the question and point to the best context snippet."
+def generate_questions(text_chunk, num_questions=5,
+                       model="meta-llama/Llama-3.2-3B-Instruct"):
+    system_prompt = (
+      "You are an expert at generating relevant questions from text. "
+      "Create concise questions that can be answered using only the provided text."
     )
-    user_p = f"{context}\n\nQuestion: {prompt}"
-    return generate_response(sys_inst, user_p)
+    user_prompt = f"""
+    Based on the following text, generate {num_questions} different questions 
+    that can be answered using only this text:
+
+    {text_chunk}
+
+    Format your response as a numbered list of questions only.
+    """
+    resp = client.chat.completions.create(
+      model=model,
+      temperature=0.7,
+      messages=[
+        {"role":"system","content":system_prompt},
+        {"role":"user","content":user_prompt}
+      ]
+    )
+    raw = resp.choices[0].message.content.strip()
+    questions = []
+    for line in raw.split("\n"):
+        q = re.sub(r"^\d+\.\s*", "", line).strip()
+        if q.endswith("?"):
+            questions.append(q)
+    return questions
+
+# 2) EMBEDDINGS
+def create_embeddings(text, model="BAAI/bge-en-icl"):
+    resp = client.embeddings.create(model=model, input=text)
+    return resp.data[0].embedding
+
+def cosine_similarity(a,b):
+    return float(np.dot(a,b)/(np.linalg.norm(a)*np.linalg.norm(b)))
+
+# 3) VECTOR STORE
+class SimpleVectorStore:
+    def __init__(self):
+        self.items = []  # each item is dict {text, embedding, metadata}
+    def add_item(self, text, embedding, metadata):
+        self.items.append(dict(text=text, embedding=embedding, metadata=metadata))
+    def search(self, query, k=5):
+        q_emb = create_embeddings(query)
+        scores = [(i, cosine_similarity(q_emb, item["embedding"]))
+                  for i,item in enumerate(self.items)]
+        scores.sort(key=lambda x:x[1], reverse=True)
+        return [self.items[i] for i,_ in scores[:k]]
+
+# 4) DOCUMENT PROCESSOR
+def process_document(raw_text,
+                     chunk_size=1000,
+                     chunk_overlap=200,
+                     questions_per_chunk=5):
+    # chunk the text
+    chunks = []
+    for i in range(0, len(raw_text), chunk_size - chunk_overlap):
+        chunks.append(raw_text[i:i+chunk_size])
+    store = SimpleVectorStore()
+    for idx,chunk in enumerate(chunks):
+        # chunk embedding
+        emb = create_embeddings(chunk)
+        store.add_item(chunk, emb, {"type":"chunk","index":idx})
+        # generate Qs + their embeddings
+        qs = generate_questions(chunk, num_questions=questions_per_chunk)
+        for q in qs:
+            q_emb = create_embeddings(q)
+            store.add_item(q, q_emb, {
+              "type":"question",
+              "chunk_index":idx,
+              "original_chunk": chunk
+            })
+    return chunks, store
+
+# 5) CONTEXT BUILDER
+def prepare_context(results):
+    seen = set()
+    ctx = []
+    # first direct chunks
+    for r in results:
+        m = r["metadata"]
+        if m["type"]=="chunk" and m["index"] not in seen:
+            seen.add(m["index"])
+            ctx.append(f"Chunk {m['index']}:\n{r['text']}")
+    # then referenced by questions
+    for r in results:
+        m = r["metadata"]
+        if m["type"]=="question":
+            ci = m["chunk_index"]
+            if ci not in seen:
+                seen.add(ci)
+                ctx.append(f"Chunk {ci} (via Q “{r['text']}”):\n{m['original_chunk']}")
+    return "\n\n".join(ctx)
+
+# 6) ANSWER GENERATOR (overrides your old generate_response)
+def generate_response_from_context(query, context,
+                                   model="meta-llama/Llama-3.2-3B-Instruct"):
+    sp = (
+      "You are an AI assistant that strictly answers based on the given context. "
+      "If the answer cannot be derived directly from the provided context, "
+      "respond with: 'I do not have enough information to answer that.'"
+    )
+    up = f"""
+    Context:
+    {context}
+
+    Question: {query}
+
+    Please answer the question based only on the context above.
+    """
+    resp = client.chat.completions.create(
+      model=model,
+      temperature=0,
+      messages=[{"role":"system","content":sp},
+                {"role":"user","content":up}]
+    )
+    return resp.choices[0].message.content
+
+
 
 
 #######################################################################################################################
@@ -565,30 +522,6 @@ def prepare_text_for_embedding(summary_dict):
     return "\n\n".join(combined_chunks)
 
 
-###################################################################################################################
-
-# Store cleaned text and FAISS index only when document is processed
-
-# Embedding for chunking
-
-
-def chunk_text(text, max_tokens=100):
-    sentences = sent_tokenize(text)
-    chunks, current_chunk = [], ""
-
-    for sentence in sentences:
-        if len(current_chunk.split()) + len(sentence.split()) > max_tokens:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence
-        else:
-            current_chunk += " " + sentence
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    return chunks
-
-
-
 ##############################################################################################################
 
 user_role = st.sidebar.selectbox(
@@ -617,8 +550,6 @@ def role_based_filter(section, summary, role):
 
 
 
-
-
 #########################################################################################################################
 
 
@@ -627,27 +558,52 @@ if uploaded_file:
     if file_hash != st.session_state.last_uploaded_hash or reprocess_btn:
         st.session_state.processed = False
 
-    # if is_new_file or reprocess_btn:
-    #     st.session_state.processed = False
-
     if not st.session_state.processed:
         start_time = time.time()
-        raw_text = extract_text(uploaded_file)
+
+        # 1) extract & summarize as before
+        raw_text     = extract_text(uploaded_file)
         summary_dict = hybrid_summary_hierarchical(raw_text)
-        # timeline_data = extract_timeline(clean_text(raw_text))
         embedding_text = prepare_text_for_embedding(summary_dict)
 
-        # Generate and display RAG-based summary
+        # ─── NEW: document‐augmentation ingestion ───
+        chunks, store = process_document(raw_text,
+                                         chunk_size=1000,
+                                         chunk_overlap=200,
+                                         questions_per_chunk=5)
+        st.session_state.vector_store = store
+        # ────────────────────────────────────────────
 
+        # 2) generate your “role‐specific prompt” as before
         st.session_state.document_context = embedding_text
-        
-        role_specific_prompt = f"As a {user_role}, summarize the legal document focusing on the most relevant aspects such as facts, arguments, and judgments tailored for your role. Include key legal reasoning and timeline of events where necessary."
-        rag_summary = rag_query_response(role_specific_prompt, embedding_text)
+      
+        if user_role == "General":
+            role_specific_prompt = (
+            "Summarize the legal document focusing on the most relevant aspects "
+            "such as facts, arguments, and judgments. Include key legal reasoning "
+            "and a timeline of events where necessary."
+        )
+        else:
+            role_specific_prompt = (
+            f"As a {user_role}, summarize the legal document focusing on "
+            "the most relevant aspects such as facts, arguments, and judgments "
+            "tailored for your role. Include key legal reasoning and timeline of events."
+        )
 
+        # ─── REPLACE rag_query_response with doc‐augmentation RAG ───
+        results = store.search(role_specific_prompt, k=5)
+        context = prepare_context(results)
+        rag_summary = generate_response_from_context(role_specific_prompt, context)
+        #
 
-        st.session_state.messages.append({"role": "user", "content": f"📤 Uploaded **{uploaded_file.name}**"})
-        st.session_state.messages.append({"role": "assistant", "content": rag_summary})
-
+        st.session_state.messages.append({
+            "role": "user", 
+            "content": f"📤 Uploaded **{uploaded_file.name}**"
+        })
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": rag_summary
+        })
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(rag_summary)
 
@@ -660,39 +616,55 @@ if uploaded_file:
         save_chat_history(st.session_state.messages)
 
 
+
 if prompt:
     words = prompt.split()
-    word_count = len(words)
+    word_count   = len(words)
+    prompt_hash  = hashlib.md5(prompt.encode("utf-8")).hexdigest()
 
-    # compute a quick hash to detect “new” direct-paste
-    prompt_hash = hashlib.md5(prompt.encode("utf-8")).hexdigest()
-
-    # --- 1) LONG prompts always re-ingest as a NEW doc ---
+    # 1) LONG prompts – echo & ingest like a “paste‐in” document
     if word_count > 30 and prompt_hash != st.session_state.last_prompt_hash:
-        # mark this as our new “last prompt”
         st.session_state.last_prompt_hash = prompt_hash
 
-        # ingest exactly like you do for an uploaded file
         raw_text = prompt
+        st.session_state.messages.append({
+            "role": "user",
+            "content": f"📥 **Pasted Document Text:**\n\n{limit_text(raw_text,500)}"
+        })
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(limit_text(raw_text,500))
+
         start_time = time.time()
-
+        # summarization + emb_text as before
         summary_dict   = hybrid_summary_hierarchical(raw_text)
-        # timeline_data  = extract_timeline(clean_text(raw_text))
         emb_text       = prepare_text_for_embedding(summary_dict)
-
-        # overwrite context
         st.session_state.document_context = emb_text
-        st.session_state.processed = True
+        st.session_state.processed        = True
 
-        # produce your initial summary
-        role_prompt = (
-            f"As a {user_role}, summarize the document focusing on facts, "
-            "arguments, judgments, plus timeline of events."
-        )
-        initial_summary = rag_query_response(role_prompt, emb_text)
+        # ─── NEW: ingest via document‐augmentation ───
+        chunks, store = process_document(raw_text)
+        st.session_state.vector_store = store
 
-        st.session_state.messages.append({"role":"user",    "content":"📥 Document ingested"})
-        st.session_state.messages.append({"role":"assistant","content":initial_summary})
+        if user_role == "General":
+            role_prompt = (
+                "Summarize the document focusing on facts, arguments, judgments, "
+                "and include a timeline of events."
+            )
+        else:
+            role_prompt = (
+                f"As a {user_role}, summarize the document focusing on facts, "
+                "arguments, judgments, plus timeline of events."
+            )
+
+        # ─── doc‐augmentation RAG here too ───
+        results = store.search(role_prompt, k=5)
+        context = prepare_context(results)
+        initial_summary = generate_response_from_context(role_prompt, context)
+      
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": initial_summary
+        })
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(initial_summary)
 
@@ -700,20 +672,32 @@ if prompt:
         save_chat_history(st.session_state.messages)
 
 
-    # --- 2) SHORT prompts are queries against the last context ---
+    # 2) SHORT prompts – normal RAG against last ingested context
     elif word_count <= 30 and st.session_state.processed:
-        answer = rag_query_response(prompt, st.session_state.document_context)
-        st.session_state.messages.append({"role":"user",     "content":prompt})
-        st.session_state.messages.append({"role":"assistant", "content":answer})
+
+        with st.chat_message("user", avatar=USER_AVATAR):
+            st.markdown(prompt)
+
+    # 2) save to history
+        st.session_state.messages.append({"role": "user", "content": prompt})
+        store = st.session_state.vector_store
+
+        # ─── instead of rag_query_response, do doc‐augmentation RAG ───
+        results = store.search(prompt, k=5)
+        context = prepare_context(results)
+        answer  = generate_response_from_context(prompt, context)
+
+        # st.session_state.messages.append({"role":"user",     "content":prompt})
+        st.session_state.messages.append({"role":"assistant","content":answer})
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(answer)
         save_chat_history(st.session_state.messages)
 
-    # --- 3) anything else: ask them to paste something first ---
+
+    # 3) not enough input
     else:
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             st.markdown("❗ Paste at least 30 words of your document to ingest it first.")
-
 
 
 ######################################################################################################################

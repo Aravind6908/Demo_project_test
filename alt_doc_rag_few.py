@@ -48,7 +48,7 @@ if "last_prompt_hash" not in st.session_state:
     st.session_state.last_prompt_hash = None
 
 
-st.title("📄 Legal Document Summarizer (Alt Model w/o token)")
+st.title("📄 Legal Document Summarizer (Alt Model w/o token doc Aug)")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -203,29 +203,9 @@ led_summarizer = load_led_summarizer()
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
 
-# @st.cache_resource
-# def load_paraphraser():
-#     # 1) load the slow SentencePiece tokenizer
-#     tok = AutoTokenizer.from_pretrained(
-#         "Vamsi/T5_Paraphrase_Paws",
-#         use_fast=False                # <— force the slow SP tokenizer
-#     )
-#     # 2) load the model
-#     model = AutoModelForSeq2SeqLM.from_pretrained("Vamsi/T5_Paraphrase_Paws")
-#     # 3) build a text2text pipeline
-#     return pipeline(
-#         "text2text-generation",
-#         model=model,
-#         tokenizer=tok,
-#         device=0 if torch.cuda.is_available() else -1,
-#         max_length=256,
-#         num_beams=4,
-#         do_sample=False
-#     )
-
 @st.cache_resource
 def load_paraphraser():
-    from transformers import AutoTokenizer, AutoModelForSeq2SeqLM, pipeline
+    
     tok   = AutoTokenizer.from_pretrained("google/flan-t5-small") 
     model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
     return pipeline(
@@ -357,24 +337,8 @@ def load_embedder():
 
 embedder = load_embedder()
 
-import faiss
 import numpy as np
 
-
-def build_faiss_index(chunks):
-    embedder = load_embedder()
-    embeddings = embedder.encode(chunks, convert_to_tensor=False)
-    dimension = embeddings[0].shape[0]
-    index = faiss.IndexFlatL2(dimension)
-    index.add(np.array(embeddings).astype("float32"))
-    st.session_state["embedder"] = embedder
-    return index, chunks  # ✅ Return both
-
-
-def retrieve_top_k(query, chunks, index, k=3):
-    query_vec = embedder.encode([query])
-    D, I = index.search(np.array(query_vec).astype("float32"), k)
-    return [chunks[i] for i in I[0]]
 
 
 def chunk_text_custom(text, n=1000, overlap=200):
@@ -401,144 +365,110 @@ def create_embeddings(text_chunks, model="BAAI/bge-en-icl"):
     return [get_embedding(chunk, model=model) for chunk in text_chunks]
 
 
-def cosine_similarity(vec1, vec2):
-    return np.dot(vec1, vec2) / (np.linalg.norm(vec1) * np.linalg.norm(vec2))
 
-
-
-
-
-def semantic_search(query, text_chunks, chunk_embeddings, k=5):
+def generate_questions(text_chunk, num_questions=5):
     """
-    Compute cosine similarity between the query embedding and each chunk embedding,
-    then pick the top-k chunks.
+    Use LED to generate a small set of probing questions
+    about this chunk that the final answer should address.
     """
-    q_emb = get_embedding(query)
-    # simple cosine:
-    def cosine(a, b): return float(np.dot(a, b) / (np.linalg.norm(a) * np.linalg.norm(b)))
-    scores = [cosine(q_emb, emb) for emb in chunk_embeddings]
+    prompt = (
+        "You are a question-generation expert. "
+        "From the text below, generate "
+        f"{num_questions} concise questions:\n\n{text_chunk}"
+    )
+    out = led_summarizer(
+        prompt,
+        max_length=128,
+        min_length=32,
+        num_beams=4,
+        do_sample=False
+    )[0]["summary_text"]
+    # assume each question on its own line
+    questions = [q.strip() for q in out.split("\n") if q.strip()]
+    return questions[:num_questions]
+
+
+def process_document(document_text):
+    """
+    1) chunk the document
+    2) embed each chunk with your SentenceTransformer
+    returns chunks, embeddings
+    """
+    chunks = chunk_text_custom(document_text, n=800, overlap=200)
+    embeddings = embedder.encode(chunks, convert_to_tensor=False)
+    return chunks, embeddings
+
+
+def semantic_search(query, chunks, chunk_embeddings, k=5):
+    """
+    Score each chunk by cosine similarity to the query embed
+    and return the top-k chunks (in descending order).
+    """
+    q_emb = embedder.encode([query], convert_to_tensor=False)[0]
+    scores = [
+        float(np.dot(q_emb, emb) / (np.linalg.norm(q_emb) * np.linalg.norm(emb)))
+        for emb in chunk_embeddings
+    ]
     top_idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
-    return [text_chunks[i] for i in top_idxs]
+    return [chunks[i] for i in top_idxs]
 
 
-# def generate_response(system_prompt, user_message, model="meta-llama/Llama-3.2-3B-Instruct"):
-#     return client.chat.completions.create(
-#         model=model,
-#         temperature=0,
-#         messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}]
-#     ).choices[0].message.content
+def prepare_context(questions, chunks, chunk_embeddings, k_per_question=2):
+    """
+    For each generated question, pick its top-k supporting chunks,
+    then dedupe & concatenate into one context string.
+    """
+    selected = []
+    for q in questions:
+        best = semantic_search(q, chunks, chunk_embeddings, k=k_per_question)
+        selected.extend(best)
 
+    # dedupe while preserving order
+    seen = set()
+    context = []
+    for c in selected:
+        if c not in seen:
+            seen.add(c)
+            context.append(c)
 
+    return "\n\n".join(f"• {c}" for c in context)
 
-# def rag_query_response(prompt, embedding_text):
-#     chunks = chunk_text_custom(embedding_text)
-#     chunk_embeddings = create_embeddings(chunks)          # now list of np.arrays
-#     top_chunks      = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-#     context_block   = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(top_chunks))
+def rag_query_response(prompt, document_text):
+    """
+    Document-Augmentation RAG:
+      1. generate probing sub-questions about the doc
+      2. process the doc (chunk + embed)
+      3. build minimal context via those questions
+      4. feed context + user prompt into LED
+      5. paraphrase (humanize)
+    """
+    # 1) Probing questions
+    questions = generate_questions(document_text, num_questions=5)
 
-#     sys_inst = (
-#          "You are an AI assistant. Always try to answer from the provided context. "
-#         "If you aren’t certain, briefly restate the user’s question and point to the most relevant context passages "
-#         "rather than saying you lack information."
-#     )
-#     user_p = f"{context_block}\n\nQuestion: {prompt}"
-#     return generate_response(sys_inst, user_p)
+    # 2) Chunk & embed the document
+    chunks, chunk_embs = process_document(document_text)
 
-# def rag_query_response(prompt, embedding_text):
-#     # 1. retrieve top-k relevant chunks as before
-#     chunks           = chunk_text_custom(embedding_text)
-#     chunk_embeddings = create_embeddings(chunks)
-#     top_chunks       = semantic_search(prompt, chunks, chunk_embeddings, k=5)
-#     context_block    = "\n\n".join(f"[{i+1}] {c}" for i,c in enumerate(top_chunks))
+    # 3) Assemble the distilled context
+    context = prepare_context(questions, chunks, chunk_embs, k_per_question=2)
 
-#     # 2. build a single input for LED
-#     #    we prefix the user’s question so LED knows what to answer
-#     led_input = f"{context_block}\n\nQuestion: {prompt}"
-
-#     # 3. call the local LED summarizer
-#     #    tune max_length/min_length as you like
-#     summary = led_summarizer(
-#         led_input,
-#         max_length=512,
-#         min_length=64,
-#         do_sample=False
-#     )[0]["summary_text"]
-
-#     return summary
-
-# def rag_query_response(prompt, embedding_text):
-#     # 1) Split & embed your document exactly as before
-#     chunks           = chunk_text_custom(embedding_text)
-#     chunk_embeddings = create_embeddings(chunks)
-
-#     # 2) Score each chunk against the query & keep top K
-#     #    Here we also keep the score so we can sort by it
-#     q_emb  = get_embedding(prompt)
-#     scores = [float(np.dot(q_emb, e) / (np.linalg.norm(q_emb)*np.linalg.norm(e)))
-#               for e in chunk_embeddings]
-#     # get top 5 indices sorted descending
-#     top_idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:5]
-#     top_chunks = [chunks[i] for i in top_idxs]
-
-#     # 3) Build a single LED input, *in order of descending relevance*
-#     context = "\n\n".join(f"[{i+1}] {c}" for i,c in enumerate(top_chunks))
-#     led_input = (
-#         "You are a helpful legal assistant.  "
-#         "Using ONLY the context below, answer the user’s question "
-#         "in a clear, conversational tone:\n\n"
-#         f"{context}\n\n"
-#         f"Question: {prompt}\n\n"
-#         "Answer:"
-#     )
-
-#     # 4) Call your local LED summarizer
-#     raw = led_summarizer(
-#         led_input,
-#         max_length=512,
-#         min_length=64,
-#         do_sample=False
-#     )[0]["summary_text"]
-    
-#     summary = humanize(raw)
-
-#     return summary
-
-def rag_query_response(prompt, embedding_text):
-    # 1) chunk & embed
-    chunks           = chunk_text_custom(embedding_text)
-    chunk_embeddings = create_embeddings(chunks)
-
-    # 2) score & pick top 5
-    q_emb  = get_embedding(prompt)
-    scores = [float((q_emb @ e) / (np.linalg.norm(q_emb)*np.linalg.norm(e)))
-              for e in chunk_embeddings]
-    top_idxs = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:5]
-    top_chunks = [chunks[i] for i in top_idxs]
-
-    # 3) build LED input with explicit “no repetition” and “single paragraph” instruction
-    context = "\n\n".join(f"[{i+1}] {c}" for i, c in enumerate(top_chunks))
+    # 4) Compose the LED input
     led_input = (
-      "You are a knowledgeable legal assistant.  "
-      "Using ONLY the context below, answer the user’s question in one coherent paragraph, "
-      "avoid repeating yourself, and use conversational tone:\n\n"
-      f"{context}\n\n"
-      f"Question: {prompt}\n\n"
-      "Answer:"
+        "You are a knowledgeable legal assistant. "
+        "Answer the user’s question **using ONLY** the context below, "
+        "and speak in a friendly, conversational tone.\n\n"
+        f"Context:\n{context}\n\n"
+        f"Question: {prompt}\n\nAnswer:"
     )
 
-    # 4) call LED summarizer with n-gram blocking
     raw = led_summarizer(
-      led_input,
-      max_length=256,
-      min_length=80,
-      num_beams=4,
-      no_repeat_ngram_size=3,
-      do_sample=False
+        led_input,
+        max_length=512,
+        min_length=64,
+        do_sample=False
     )[0]["summary_text"]
 
-    # 5) lightly paraphrase for “human” style
+    # 5) Humanize
     return humanize(raw)
-
 
 #######################################################################################################################
 
@@ -623,23 +553,6 @@ def prepare_text_for_embedding(summary_dict):
 # Store cleaned text and FAISS index only when document is processed
 
 # Embedding for chunking
-
-
-def chunk_text(text, max_tokens=100):
-    sentences = sent_tokenize(text)
-    chunks, current_chunk = [], ""
-
-    for sentence in sentences:
-        if len(current_chunk.split()) + len(sentence.split()) > max_tokens:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence
-        else:
-            current_chunk += " " + sentence
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-
-    return chunks
-
 
 
 ##############################################################################################################
