@@ -7,7 +7,6 @@ import nltk
 import re
 import os
 import time  # already imported in your code
-# from dotenv import load_dotenv
 import torch
 from sentence_transformers import SentenceTransformer, util
 nltk.download('punkt')
@@ -17,7 +16,6 @@ nltk.download('punkt_tab')
 from transformers import LEDTokenizer, LEDForConditionalGeneration
 from transformers import pipeline
 import asyncio
-# import dateutil.parser
 from datetime import datetime
 import sys
 from openai import OpenAI
