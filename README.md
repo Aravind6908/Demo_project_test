@@ -1,6 +1,6 @@
 # **Legal Document Summarization**
 
-![alt text] https://github.com/Aravind6908/Demo_project_test/tree/development
+![alt text] https://github.com/Aravind6908/Demo_project_test/blob/development/Images/img1.png
 
 
 ## **1. Project Overview**
@@ -55,7 +55,7 @@ To address these challenges, our project introduces an advanced AI-driven Legal 
 
 project/
 ├── doc_aug_rag_new.py   Main Streamlit application entry point for local
-├── requirements.txt  
+├── doc_aug_rag_stream.py   Main Streamlit application entry point for streamlit cloud
 ├── requirements.txt        # List of project dependencies
 ├── .streamlit/             # Streamlit-specific configuration and secrets
 └── chat_history.db         # Persistent storage for chat history using shelve database
@@ -75,3 +75,9 @@ project/
 **Cost-effectiveness:** Democratizes legal services, benefiting individuals, small businesses, and under-resourced law firms.
 
 This repository provides detailed insights into the system architecture, implemented features, evaluation results, and future enhancements planned for the AI-powered Legal Document Summarization project.
+
+## ** Cloud Links
+
+https://lds-final.streamlit.app/
+
+https://huggingface.co/spaces/hymarog1/LegalDoc
