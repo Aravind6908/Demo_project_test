@@ -76,8 +76,8 @@ project/
 
 This repository provides detailed insights into the system architecture, implemented features, evaluation results, and future enhancements planned for the AI-powered Legal Document Summarization project.
 
-## ** Cloud Links
+## **Cloud Links**
 
-https://lds-final.streamlit.app/
+Streamlit link: https://lds-final.streamlit.app/
 
-https://huggingface.co/spaces/hymarog1/LegalDoc
+Hugging Face: https://huggingface.co/spaces/hymarog1/LegalDoc
