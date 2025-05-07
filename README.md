@@ -1,6 +1,6 @@
 # **Legal Document Summarization**
 
-![alt text] https://github.com/Aravind6908/Demo_project_test/blob/development/Images/img1.png
+![screenshot] Images/img1.png
 
 
 ## **1. Project Overview**
