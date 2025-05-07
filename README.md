@@ -1,6 +1,6 @@
 # **Legal Document Summarization**
 
-![alt text] https://github.com/Aravind6908/Demo_project_test/tree/development
+https://github.com/Aravind6908/Demo_project_test/tree/development
 
 
 ## **1. Project Overview**
