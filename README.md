@@ -1,6 +1,7 @@
 # **Legal Document Summarization**
 
-![screenshot] Images/img1.png
+
+![screenshot](Images/img1.png)
 
 
 ## **1. Project Overview**
@@ -53,16 +54,20 @@ To address these challenges, our project introduces an advanced AI-driven Legal 
 
 ### **3. Project Structure**
 
-project/
-├── doc_aug_rag_new.py   Main Streamlit application entry point for local
-├── doc_aug_rag_stream.py   Main Streamlit application entry point for streamlit cloud
-├── requirements.txt        # List of project dependencies
-├── .streamlit/             # Streamlit-specific configuration and secrets
-└── chat_history.db         # Persistent storage for chat history using shelve database
+DEMO_PROJECT_TEST/
+* ├── doc_aug_rag_new.py => Main Streamlit application entry point for local
+* ├── doc_aug_rag_stream.py => Main Streamlit application entry point for streamlit cloud
+* ├── requirements.txt  => List of project dependencies
+* ├── .streamlit/  => Streamlit-specific configuration and secrets
+* ├── chat_history.db  => Persistent storage for chat history using shelve database
 
 ## **Evaluation & Metrics**
 
 *   Evaluated using ROUGE, BLEU, and BERTScore for ensuring high summarization quality and factual accuracy.
+
+![screenshot](Images/eval1.jpeg)
+![screenshot](Images/eval2.jpeg)
+
 
 ## **Impact and Advantages:**
 
