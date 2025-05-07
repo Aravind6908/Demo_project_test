@@ -1,4 +1,8 @@
 # **Legal Document Summarization**
+
+![alt text] https://github.com/Aravind6908/Demo_project_test/tree/development
+
+
 ## **1. Project Overview**
 
 Legal professionals frequently navigate complex, lengthy documents including court rulings, contracts, statutes, and case files. Manually summarizing these documents is not only highly time-consuming—often requiring 4-8 hours for a single case—but also prone to human errors such as missing critical precedents or clauses, potentially leading to costly litigation outcomes. Additionally, smaller law firms and pro bono lawyers frequently lack adequate resources for thorough document analysis, exacerbating legal inequities.
@@ -23,7 +27,6 @@ To address these challenges, our project introduces an advanced AI-driven Legal 
 
 *  Utilizes zero-shot classification models (e.g., DistilBART-MNLI) to automatically categorize legal document sections (Facts, Arguments, Judgment).
 
-
 ### **Hybrid Summarization**
 
 #### Extractive Summarization (Legal-BERT)
@@ -47,3 +50,28 @@ To address these challenges, our project introduces an advanced AI-driven Legal 
 #### Vector storage and retrieval mechanism
 
 *   Implements efficient vector storage solutions and retrieval techniques powered by BM25 and SBERT for rapid and accurate information retrieval.
+
+### **3. Project Structure**
+
+project/
+├── doc_aug_rag_new.py   Main Streamlit application entry point for local
+├── requirements.txt  
+├── requirements.txt        # List of project dependencies
+├── .streamlit/             # Streamlit-specific configuration and secrets
+└── chat_history.db         # Persistent storage for chat history using shelve database
+
+## **Evaluation & Metrics**
+
+*   Evaluated using ROUGE, BLEU, and BERTScore for ensuring high summarization quality and factual accuracy.
+
+## **Impact and Advantages:**
+
+**Efficiency:** Lawyers can review significantly more cases in less time.
+
+**Consistency:** Enables uniform judicial decisions through quick comparison of relevant precedents.
+
+**Sustainability:** Decreases dependency on printed documents, fostering environmental sustainability.
+
+**Cost-effectiveness:** Democratizes legal services, benefiting individuals, small businesses, and under-resourced law firms.
+
+This repository provides detailed insights into the system architecture, implemented features, evaluation results, and future enhancements planned for the AI-powered Legal Document Summarization project.
