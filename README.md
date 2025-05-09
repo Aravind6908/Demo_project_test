@@ -88,9 +88,9 @@ Streamlit link: https://lds-final.streamlit.app/
 Hugging Face: https://huggingface.co/spaces/hymarog1/LegalDoc
 
 👥 **Team Members**
-Aravind Bhimanathini
-Hyma Roshini Gompa
-Vijaya Amruth Krishna Kavaturi
+*Aravind Bhimanathini
+*Hyma Roshini Gompa
+*Vijaya Amruth Krishna Kavaturi
 
 
 
