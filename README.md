@@ -10,14 +10,14 @@ Legal professionals frequently navigate complex, lengthy documents including cou
 
 To address these challenges, our project introduces an advanced AI-driven Legal Document Summarizer leveraging state-of-the-art Natural Language Processing (NLP) and Retrieval-Augmented Generation (RAG) technologies. This innovative tool automates the summarization and retrieval of legal documents, significantly enhancing the speed, accuracy, and equity of legal review processes.
 
-### **Key Objectives:**
+### 🔑**Key Objectives:**
 
 *   Reduce Time and Costs: Drastically cut down the review time of legal documents by up to 70%, potentially reducing associated paralegal costs by up to 80%.
 *   Enhance Accuracy and Precision: Minimize human errors by automatically flagging critical clauses, precedents, and rulings.
 *   Improve Accessibility and Equity: Provide equitable access to powerful legal analysis tools, empowering smaller firms and pro bono lawyers.
 
 
-## **2.Key Functionalities**
+## **⚙️ 2.Key Functionalities**
 
 ### **Document Ingestion & Cleaning**
 
@@ -52,7 +52,7 @@ To address these challenges, our project introduces an advanced AI-driven Legal 
 
 *   Implements efficient vector storage solutions and retrieval techniques powered by BM25 and SBERT for rapid and accurate information retrieval.
 
-### **3. Project Structure**
+### **3. 🗂Project Structure**
 
 DEMO_PROJECT_TEST/
 * ├── doc_aug_rag_new.py => Main Streamlit application entry point for local
@@ -61,7 +61,7 @@ DEMO_PROJECT_TEST/
 * ├── .streamlit/  => Streamlit-specific configuration and secrets
 * ├── chat_history.db  => Persistent storage for chat history using shelve database
 
-## **Evaluation & Metrics**
+## 📊 **Evaluation & Metrics**
 
 *   Evaluated using ROUGE, BLEU, and BERTScore for ensuring high summarization quality and factual accuracy.
 
@@ -86,3 +86,12 @@ This repository provides detailed insights into the system architecture, impleme
 Streamlit link: https://lds-final.streamlit.app/
 
 Hugging Face: https://huggingface.co/spaces/hymarog1/LegalDoc
+
+👥 **Team Members**
+Aravind Bhimanathini
+Hyma Roshini Gompa
+Vijaya Amruth Krishna Kavaturi
+
+
+
+
