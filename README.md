@@ -92,6 +92,8 @@ Hugging Face: https://huggingface.co/spaces/hymarog1/LegalDoc
 - Hyma Roshini Gompa  
 - Vijaya Amruth Krishna Kavaturi
 
+**DEMO**
+
 
 
 
