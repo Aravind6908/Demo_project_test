@@ -1,0 +1,89 @@
+[
+    {
+      "document_id": "case2",
+      "query": "What is the main legal issue discussed in the case?",
+      "ground_truth_answer": "The main legal issue concerns the mass disqualification of 1,415 members from a cooperative society without individual inquiry. The action was based on a general notice and an undisclosed Committee report. The appellants argued this violated principles of natural justice. The Supreme Court examined whether such a process was legally and procedurally fair under the Maharashtra Cooperative Societies Act, 1960."
+      
+    },
+    {
+      "document_id": "case2",
+      "query": "Which court delivered the judgment, and who was the presiding judge?",
+      "ground_truth_answer": "The judgment was delivered by the Supreme Court of India in its Civil Appellate Jurisdiction. The presiding judge was Dr. Dhananjaya Y Chandrachud, Chief Justice of India (CJI). He authored the judgment in Civil Appeal Nos. 88–89 of 2023. Justice Pamidighantam Sri Narasimha was also part of the Bench."
+    },
+    {
+        "document_id": "case2",
+        "query": "What are the Civil Appeal or SLP numbers associated with this case?",
+        "ground_truth_answer": "The Civil Appeal numbers associated with this case are Civil Appeal Nos. 88–89 of 2023. These appeals originated from Special Leave Petition (Civil) Nos. 20001–20002 of 2022 and SLP (C) Nos. 22734–22737 of 2022.​"
+    },
+    {
+        "document_id": "case2",
+        "query": "Who are the parties involved in the case?",
+        "ground_truth_answer": "The parties involved in the case are: Appellant: Deepak Ananda Patil Respondents: The State of Maharashtra and Others, including Shri Chhatrapati Rajaram Sahakari Sakhar Karkhana Limited (a cooperative society) and other individuals (respondents 3 to 8) who filed the original complaints."
+    },
+    {
+        "document_id": "case2",
+        "query": "What statutory or constitutional provisions are referenced?",
+        "ground_truth_answer": "The statutory and constitutional provisions referenced in the document are: Section 11 of the Maharashtra Cooperative Societies Act, 1960 – relates to the eligibility and disqualification of members in a cooperative society. Section 152 of the Maharashtra Cooperative Societies Act, 1960 – provides for appeals against orders passed under the Act. Article 226 of the Constitution of India – grants High Courts the power to issue writs for enforcement of rights. "
+    },
+    {
+        "document_id": "case2",
+        "query": "What orders were passed by the lower courts before reaching this court?",
+        "ground_truth_answer": "Before the case reached the Supreme Court, the following orders were passed by the lower authorities: The Regional Joint Director (Sugar) passed an order on 14 February 2020, disqualifying 1,415 members of the cooperative society. An appeal under Section 152 was filed and subsequently dismissed on 18 February 2021 by the Minister of Cooperation. The affected parties then filed writ petitions before the High Court of Judicature at Bombay, which were rejected by a Single Judge on 22 September 2022."
+    },
+    {
+        "document_id": "case2",
+        "query": "What is the timeline of legal events in this case?",
+        "ground_truth_answer": "Here is the timeline of legal events in this case based on the document: 2019: Complaints were filed under Section 11 of the Maharashtra Cooperative Societies Act challenging the eligibility of ~2000 members. 20 December 2019: The High Court directed the Regional Joint Director (Sugar) to complete the inquiry by 15 February 2020. 3 January 2020: A show cause notice was issued to the cooperative society. 14 February 2020: The Regional Joint Director passed an order disqualifying 1,415 members. 18 February 2021: The appeal was dismissed by the Minister of Cooperation. 22 September 2022: The Bombay High Court rejected the writ petitions. 4 January 2023: The Supreme Court delivered its judgment, setting aside the previous orders."
+    },
+    {
+        "document_id": "case2",
+        "query": "What was the direction given by the High Court?",
+        "ground_truth_answer": "The High Court of Judicature at Bombay, in an order dated 20 December 2019, directed the Regional Joint Director (Sugar) to complete the enquiry into the eligibility of cooperative society members by 15 February 2020. This direction came in response to writ petitions filed by some complainants challenging the membership eligibility of nearly 2,000 individuals. The High Court imposed this deadline to expedite the process, which later became a point of contention, as the inquiry was allegedly conducted in haste without proper individual assessment."
+    },
+    {
+        "document_id": "case2",
+        "query": "How much time was given to conclude the enquiry?",
+        "ground_truth_answer": "The High Court gave the Regional Joint Director (Sugar) a time frame of less than two months to conclude the enquiry—specifically, from 20 December 2019 to 15 February 2020."
+    },
+    {
+        "document_id": "case2",
+        "query": "What were the findings of the appellate authority before the Supreme Court's intervention?",
+        "ground_truth_answer": "Before the Supreme Court's intervention, the appellate authority—the Minister of Cooperation—dismissed the appeal on 18 February 2021. The Minister upheld the findings of the Regional Joint Director (Sugar), which had disqualified 1,415 members from the cooperative society. The appellate authority did not address individual eligibility or procedural fairness, effectively affirming the mass disqualification without individualized scrutiny."
+    },
+    {
+        "document_id": "case2",
+        "query": "Was there any breach of natural justice mentioned?",
+        "ground_truth_answer": "Yes, the document clearly mentions a breach of natural justice. The Supreme Court found that: The Committee’s Report, which was used to determine member eligibility, was not disclosed to the affected members or the cooperative society. There was no individualized inquiry or specific allegations provided to each member. A general notice was issued instead of personal communication, and decisions were made without giving members a fair opportunity to respond. The Court held that this violated the principles of natural justice, as the affected members were denied a real and effective chance to defend themselves."
+    },
+    {
+        "document_id": "case2",
+        "query": "Were the affected parties given a chance to be heard?",
+        "ground_truth_answer": "No, the affected parties were not given a proper chance to be heard. The inquiry was conducted based on a general notice sent to the cooperative society, and no specific allegations were made against individual members. Additionally, the Committee’s Report, which formed the basis of disqualification, was not shared with the members. As a result, the Supreme Court held that the members were denied a fair opportunity to present their case, amounting to a violation of the right to be heard."
+    },
+    {
+        "document_id": "case2",
+        "query": "What did the Supreme Court decide in this case?",
+        "ground_truth_answer": "The Supreme Court allowed the appeals and set aside the following: The judgment of the High Court dated 22 September 2022, The order of the Regional Joint Director (Sugar) dated 14 February 2020, and The order of the Minister of Cooperation dated 18 February 2021. The Court restored the proceedings to the Regional Joint Director and directed that affected members be given access to the Committee’s report, complaints, and related documents, along with an opportunity to be heard. Fresh orders must be passed after following due process and hearing each member individually."
+    },
+    {
+        "document_id": "case2",
+        "query": "Were the previous orders set aside or upheld?",
+        "ground_truth_answer": "The previous orders were set aside by the Supreme Court. This included: The High Court’s judgment dated 22 September 2022, The Regional Joint Director (Sugar)’s order dated 14 February 2020, and The Minister of Cooperation’s appellate order dated 18 February 2021. All were nullified due to procedural lapses and violation of natural justice."
+    },
+    {
+        "document_id": "case2",
+        "query": "What relief was granted to the petitioners?",
+        "ground_truth_answer": "The Supreme Court granted the following relief to the petitioners: Set aside all previous orders by the High Court, Regional Joint Director (Sugar), and Minister of Cooperation. Restored the proceedings to the Regional Joint Director (Sugar) for fresh adjudication. Directed that the Committee’s scrutiny report, complaints, and related documents be disclosed to the affected members. Allowed the members to submit replies within one month after disclosure. Ordered the Regional Joint Director to pass fresh orders after giving the members an opportunity to be heard, within three months thereafter."
+    },
+    {
+        "document_id": "case2",
+        "query": "What directions were given for further action?",
+        "ground_truth_answer": "The Supreme Court gave the following directions for further action: The proceedings were restored to the Regional Joint Director (Sugar). The affected members must be given copies of the Committee’s scrutiny report, complaints, and supporting documents within one month. Members are allowed to submit their replies within one month after receiving the documents. The Regional Joint Director must hear the members individually and pass fresh orders within three months thereafter.No new show cause notice is required since the members have already appeared in the proceedings"
+    },
+    {
+        "document_id": "case2",
+        "query": "Does the judgment reference any landmark cases or precedents?",
+        "ground_truth_answer": "Yes, the judgment references several landmark cases and precedents, particularly on the principles of natural justice and disclosure of material. Key cases cited include: T. Takano v. Securities and Exchange Board of India (2022) 8 SCC 162 Natwar Singh v. Director of Enforcement (2010) 13 SCC 255 Krishna Chandra Tandon v. Union of India (AIR 1974 SC 1589) Khudiram Das v. State of West Bengal (1975) 2 SCC 81 Union of India v. Mohd. Ramzan Khan (1991) 1 SCC 588 Managing Director, ECIL v. B. Karunakar (1993) 4 SCC 727 State Bank of Patiala v. SK Sharma (1996) 3 SCC 364 Kothari Filaments v. Commissioner of Customs (2009) 2 SCC 192 These cases were cited to emphasize the importance of fair hearing and the obligation to disclose evidence used in administrative proceedings."
+    }
+  ]
+  

@@ -7,7 +7,6 @@ import nltk
 import re
 import os
 import time  # already imported in your code
-import requests
 from dotenv import load_dotenv
 import torch
 from sentence_transformers import SentenceTransformer, util
@@ -18,7 +17,13 @@ nltk.download('punkt_tab')
 from transformers import LEDTokenizer, LEDForConditionalGeneration
 from transformers import pipeline
 import asyncio
+import dateutil.parser
+from datetime import datetime
 import sys
+import openai
+import faiss
+import numpy as np
+
 # Fix for RuntimeError: no running event loop on Windows
 if sys.platform.startswith("win"):
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
@@ -26,7 +31,18 @@ if sys.platform.startswith("win"):
 
 st.set_page_config(page_title="Legal Document Summarizer", layout="wide")
 
-st.title("📄 Legal Document Summarizer (stage 4 )")
+
+
+if "processed" not in st.session_state:
+    st.session_state.processed = False
+if "last_uploaded_hash" not in st.session_state:
+    st.session_state.last_uploaded_hash = None
+if "chat_prompt_processed" not in st.session_state:
+    st.session_state.chat_prompt_processed = False
+
+
+
+st.title("📄 Legal Document Summarizer (Embedding Version 2)")
 
 USER_AVATAR = "👤"
 BOT_AVATAR = "🤖"
@@ -89,7 +105,7 @@ def load_local_zero_shot_classifier():
 local_classifier = load_local_zero_shot_classifier()
 
 
-SECTION_LABELS = ["Facts", "Arguments", "Judgment", "Other"]
+SECTION_LABELS = ["Facts", "Arguments", "Judgement", "Others"]
 
 def classify_chunk(text):
     result = local_classifier(text, candidate_labels=SECTION_LABELS)
@@ -98,7 +114,7 @@ def classify_chunk(text):
 
 # NEW: NLP-based sectioning using zero-shot classification
 def section_by_zero_shot(text):
-    sections = {"Facts": "", "Arguments": "", "Judgment": "", "Other": ""}
+    sections = {"Facts": "", "Arguments": "", "Judgment": "", "Others": ""}
     sentences = sent_tokenize(text)
     chunk = ""
 
@@ -110,7 +126,7 @@ def section_by_zero_shot(text):
             # 👇 Normalize label (title case and fallback)
             label = label.capitalize()
             if label not in sections:
-                label = "Other"
+                label = "Others"
             sections[label] += chunk + "\n"
             chunk = ""
 
@@ -156,6 +172,12 @@ def load_led():
     return tokenizer, model
 
 tokenizer_led, model_led = load_led()
+
+from sentence_transformers import SentenceTransformer
+
+@st.cache_resource
+def load_embedder():
+    return SentenceTransformer("nomic-ai/nomic-embed-text-v1")  # or "intfloat/e5-large-v2"
 
 
 def legalbert_extractive_summary(text, top_ratio=0.2):
@@ -226,6 +248,48 @@ def led_abstractive_summary_chunked(text, max_tokens=3000):
 
 
 
+def extract_timeline(text):
+    sentences = sent_tokenize(text)
+    timeline = []
+
+    for sentence in sentences:
+        try:
+            # Try fuzzy parsing on the sentence
+            parsed = dateutil.parser.parse(sentence, fuzzy=True)
+
+            # Validate year: exclude years before 1950 unless explicitly whitelisted
+            current_year = datetime.now().year
+            if 1900 <= parsed.year <= current_year + 5:
+                # Additional filtering: discard misleading past years unless contextually valid
+                if parsed.year < 1950 and parsed.year not in [2020, 2022, 2023]:
+                    continue
+
+                # Further validation: ignore obviously wrong patterns like years starting with 0
+                if re.match(r"^0\d{3}$", str(parsed.year)):
+                    continue
+
+                # Passed all checks
+                timeline.append((parsed.date(), sentence.strip()))
+        except Exception:
+            continue
+
+    # Remove duplicates and sort
+    unique_timeline = list(set(timeline))
+    return sorted(unique_timeline, key=lambda x: x[0])
+
+
+
+def format_timeline_for_chat(timeline_data):
+    if not timeline_data:
+        return "_No significant timeline events detected._"
+    
+    formatted = "🗓️ **Timeline of Events**\n\n"
+    for date, event in timeline_data:
+        formatted += f"**{date.strftime('%Y-%m-%d')}**: {event}\n\n"
+    return formatted.strip()
+
+
+
 def hybrid_summary_hierarchical(text, top_ratio=0.8):
     cleaned_text = clean_text(text)
     sections = section_by_zero_shot(cleaned_text)
@@ -249,6 +313,44 @@ def hybrid_summary_hierarchical(text, top_ratio=0.8):
     return structured_summary
 
 
+
+def build_faiss_index(chunks):
+    embedder = load_embedder()
+    embeddings = embedder.encode(chunks, convert_to_tensor=False)
+    dimension = embeddings[0].shape[0]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.array(embeddings).astype("float32"))
+    st.session_state["embedder"] = embedder
+    return index, chunks  # ✅ Return both
+
+
+def retrieve_top_k(query, chunks, index, k=3):
+    query_vec = embedder.encode([query])
+    D, I = index.search(np.array(query_vec).astype("float32"), k)
+    return [chunks[i] for i in I[0]]
+
+
+def summarize_query_response(query, chunks, index):
+    top_chunks = retrieve_top_k(query, chunks, index)
+    combined_text = "\n".join(top_chunks)
+    return led_abstractive_summary_chunked(combined_text)
+
+
+def generate_answer_with_gpt(query, context):
+    openai.api_key = os.getenv("OPENAI_API_KEY")
+    messages = [
+        {"role": "system", "content": "You are a helpful legal assistant."},
+        {"role": "user", "content": f"Document Context:\n{context}\n\nQuestion: {query}"}
+    ]
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=messages,
+        temperature=0.2
+    )
+    return response['choices'][0]['message']['content'].strip()
+
+
+
 #######################################################################################################################
 
 
@@ -262,13 +364,18 @@ if "messages" not in st.session_state:
 if "last_uploaded" not in st.session_state:
     st.session_state.last_uploaded = None
 
+
+
 # Sidebar with a button to delete chat history
 with st.sidebar:
     st.subheader("⚙️ Options")
     if st.button("Delete Chat History"):
         st.session_state.messages = []
         st.session_state.last_uploaded = None
+        st.session_state.processed = False
+        st.session_state.chat_prompt_processed = False
         save_chat_history([])
+
 
 # Display chat messages with a typing effect
 def display_with_typing_effect(text, speed=0.005):
@@ -305,6 +412,51 @@ def get_file_hash(file):
     file.seek(0)
     return hashlib.md5(content).hexdigest()
 
+# Function to prepare text for embedding
+# This function combines the extractive and abstractive summaries into a single string for embedding
+def prepare_text_for_embedding(summary_dict, timeline_data):
+    combined_chunks = []
+
+    for section, content in summary_dict.items():
+        ext = content.get("extractive", "").strip()
+        abs = content.get("abstractive", "").strip()
+        if ext:
+            combined_chunks.append(f"{section} - Extractive Summary:\n{ext}")
+        if abs:
+            combined_chunks.append(f"{section} - Abstractive Summary:\n{abs}")
+
+    if timeline_data:
+        combined_chunks.append("Timeline of Events:\n")
+        for date, event in timeline_data:
+            combined_chunks.append(f"{date.strftime('%Y-%m-%d')}: {event.strip()}")
+
+    return "\n\n".join(combined_chunks)
+
+
+###################################################################################################################
+
+# Store cleaned text and FAISS index only when document is processed
+
+# Embedding for chunking
+
+
+
+def chunk_text(text, max_tokens=100):
+    sentences = sent_tokenize(text)
+    chunks, current_chunk = [], ""
+
+    for sentence in sentences:
+        if len(current_chunk.split()) + len(sentence.split()) > max_tokens:
+            chunks.append(current_chunk.strip())
+            current_chunk = sentence
+        else:
+            current_chunk += " " + sentence
+    if current_chunk:
+        chunks.append(current_chunk.strip())
+
+    return chunks
+
+
 
 ##############################################################################################################
 
@@ -323,7 +475,7 @@ def role_based_filter(section, summary, role):
         "abstractive": ""
     }
 
-    if role == "Judge" and section in ["Judgment", "Facts"]:
+    if role == "Judge" and section in ["Judgement", "Facts"]:
         filtered_summary = summary
     elif role == "Lawyer" and section in ["Arguments", "Facts"]:
         filtered_summary = summary
@@ -333,117 +485,201 @@ def role_based_filter(section, summary, role):
     return filtered_summary
 
 
-
+# Process uploaded file
 if uploaded_file:
     file_hash = get_file_hash(uploaded_file)
-    
-    # Check if file is new OR reprocess is triggered
-    if file_hash != st.session_state.get("last_uploaded_hash") or reprocess_btn:
+    is_new_file = file_hash != st.session_state.last_uploaded_hash
 
-        start_time = time.time()  # Start the timer
+    if is_new_file or reprocess_btn:
+        st.session_state.processed = False
 
+    if not st.session_state.processed:
+        start_time = time.time()
         raw_text = extract_text(uploaded_file)
-        
+
+        # Step 1: Hybrid summary
         summary_dict = hybrid_summary_hierarchical(raw_text)
 
+        # Step 2: Timeline extraction
+        timeline_data = extract_timeline(clean_text(raw_text))
+
+        # Step 3: Prepare for embedding
+        embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
+
+        # Step 4: Chunk + Embed
+        chunks = chunk_text(embedding_text)
+        index = build_faiss_index(chunks)
+
+        # st.success(f"✅ Embedding completed with {len(chunks)} chunks.")
+        # st.code(f"First chunk sample:\n{chunks[0][:300]}", language="markdown")
+
+        print(f"[DEBUG] ✅ FAISS index built with {len(chunks)} chunks.")
+        print("[DEBUG] Sample chunk for embedding:\n", chunks[0][:300])
+
+
+        # Step 5: Save to session
+        st.session_state["faiss_chunks"] = chunks
+        st.session_state["faiss_index"] = index
+        st.session_state["embedder"] = embedder
+        st.session_state["cleaned_text"] = embedding_text
+        st.session_state["last_uploaded_hash"] = file_hash
+        st.session_state.processed = True
+
+        # Step 6: Add upload message
         st.session_state.messages.append({
             "role": "user",
             "content": f"📤 Uploaded **{uploaded_file.name}**"
-        })    
-      
+        })
 
-        # Start building preview
+        # Step 7: Summary display
         preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
-
-        
-        for section in ["Facts", "Arguments", "Judgment", "Other"]:
+        for section in ["Facts", "Arguments", "Judgement", "Others"]:
             if section in summary_dict:
-
                 filtered = role_based_filter(section, summary_dict[section], user_role)
-
                 extractive = filtered.get("extractive", "").strip()
                 abstractive = filtered.get("abstractive", "").strip()
 
                 if not extractive and not abstractive:
-                    continue  # Skip if empty after filtering
+                    continue
 
                 preview_text += f"### 📘 {section} Section\n"
                 preview_text += f"📌 **Extractive Summary:**\n{extractive if extractive else '_No content extracted._'}\n\n"
                 preview_text += f"🔍 **Abstractive Summary:**\n{abstractive if abstractive else '_No summary generated._'}\n\n"
 
-
-        # Display in chat
         with st.chat_message("assistant", avatar=BOT_AVATAR):
             display_with_typing_effect(clean_text(preview_text), speed=0)
 
-        # Show processing time after the summary
-        processing_time = round(time.time() - start_time, 2)
-        st.session_state["last_response_time"] = processing_time
+        # Step 8: Show timeline
+        if timeline_data:
+            st.subheader("🗓️ Timeline of Events")
+            for date, event in timeline_data:
+                with st.expander(f"{date.strftime('%Y-%m-%d')}"):
+                    st.write(f"**Event:** {event}")
+        else:
+            st.info("No significant timeline events detected.")
 
-        if "last_response_time" in st.session_state:
-            st.info(f"⏱️ Response generated in **{st.session_state['last_response_time']} seconds**.")
+        # Step 9: Save timeline to chat
+        timeline_text = format_timeline_for_chat(timeline_data)
+        st.session_state.messages.append({
+            "role": "assistant",
+            "content": timeline_text
+        })
 
+        # Step 10: Show time
+        processing_time = round((time.time() - start_time) / 60, 2)
+        st.info(f"⏱️ Response generated in **{processing_time} minutes**.")
+
+        # Step 11: Save summary to chat + persist
         st.session_state.messages.append({
             "role": "assistant",
             "content": clean_text(preview_text)
         })
-
-        # Save this file hash only if it’s a new upload (avoid overwriting during reprocess)
-        if not reprocess_btn:
-            st.session_state.last_uploaded_hash = file_hash
-
         save_chat_history(st.session_state.messages)
 
-        st.rerun()
 
-
-# Handle chat input and return hybrid summary
-if prompt:
+if prompt and not st.session_state.chat_prompt_processed:
+    start_time = time.time()
     raw_text = prompt
-    start_time = time.time() 
 
+    # Step 1: Summarize input
     summary_dict = hybrid_summary_hierarchical(raw_text)
-    
+
+    # Step 2: Extract timeline
+    timeline_data = extract_timeline(clean_text(raw_text))
+
+    # Step 3: Prepare embedding text
+    embedding_text = prepare_text_for_embedding(summary_dict, timeline_data)
+
+    # Step 4: Embed + build FAISS index
+    chunks = chunk_text(embedding_text)
+    index = build_faiss_index(chunks)
+
+    # st.success(f"✅ Embedding completed with {len(chunks)} chunks from user prompt.")
+    # st.code(f"First chunk sample:\n{chunks[0][:300]}", language="markdown")
+
+    print(f"[DEBUG] ✅ FAISS index built with {len(chunks)} chunks.")
+    print("[DEBUG] Sample chunk for embedding:\n", chunks[0][:300])
+
+    # Save to session for future QA
+    st.session_state["faiss_chunks"] = chunks
+    st.session_state["faiss_index"] = index
+    st.session_state["embedder"] = embedder
+    st.session_state["cleaned_text"] = embedding_text
+
+    # Step 5: Save user message
     st.session_state.messages.append({
         "role": "user",
         "content": prompt
     })
 
-    # Start building preview
-    preview_text = f"🧾 **Hybrid Summary of {uploaded_file.name}:**\n\n"
-
-    for section in ["Facts", "Arguments", "Judgment", "Other"]:
+    # Step 6: Display summary
+    preview_text = f"🧾 **Hybrid Summary of User Input:**\n\n"
+    for section in ["Facts", "Arguments", "Judgement", "Others"]:
         if section in summary_dict:
-            
             filtered = role_based_filter(section, summary_dict[section], user_role)
-
             extractive = filtered.get("extractive", "").strip()
             abstractive = filtered.get("abstractive", "").strip()
 
             if not extractive and not abstractive:
-                continue  # Skip if empty after filtering
+                continue
 
             preview_text += f"### 📘 {section} Section\n"
             preview_text += f"📌 **Extractive Summary:**\n{extractive if extractive else '_No content extracted._'}\n\n"
             preview_text += f"🔍 **Abstractive Summary:**\n{abstractive if abstractive else '_No summary generated._'}\n\n"
 
-
-    # Display in chat
     with st.chat_message("assistant", avatar=BOT_AVATAR):
         display_with_typing_effect(clean_text(preview_text), speed=0)
 
-    # Show processing time after the summary
-    processing_time = round(time.time() - start_time, 2)
-    st.session_state["last_response_time"] = processing_time
+    # Step 7: Show timeline
+    if timeline_data:
+        st.subheader("🗓️ Timeline of Events")
+        for date, event in timeline_data:
+            with st.expander(f"{date.strftime('%Y-%m-%d')}"):
+                st.write(f"**Event:** {event}")
+    else:
+        st.info("No significant timeline events detected.")
 
-    if "last_response_time" in st.session_state:
-        st.info(f"⏱️ Response generated in **{st.session_state['last_response_time']} seconds**.")
+    # Step 8: Save timeline in chat
+    timeline_text = format_timeline_for_chat(timeline_data)
+    st.session_state.messages.append({
+        "role": "assistant",
+        "content": timeline_text
+    })
 
+    # Step 9: Processing time
+    processing_time = round((time.time() - start_time) / 60, 2)
+    st.info(f"⏱️ Response generated in **{processing_time} minutes**.")
+
+    # Step 10: Save everything
     st.session_state.messages.append({
         "role": "assistant",
         "content": clean_text(preview_text)
     })
-    
     save_chat_history(st.session_state.messages)
+    st.session_state.chat_prompt_processed = True
 
-    st.rerun()
+# Add below this block: if prompt and not st.session_state.chat_prompt_processed:
+
+# Stage 7: Interactive RAG Chatbot
+elif prompt and st.session_state.processed:
+    st.session_state.messages.append({"role": "user", "content": prompt})
+    with st.spinner("💡 Generating response with context..."):
+        chunks = st.session_state.get("faiss_chunks")
+        index = st.session_state.get("faiss_index")
+
+        if chunks and index:
+            top_chunks = retrieve_top_k(prompt, chunks, index)
+            context = "\n".join(top_chunks)
+            answer = generate_answer_with_gpt(prompt, context)
+
+            with st.chat_message("assistant", avatar=BOT_AVATAR):
+                display_with_typing_effect(answer, speed=0.005)
+
+            st.session_state.messages.append({
+                "role": "assistant",
+                "content": answer
+            })
+            save_chat_history(st.session_state.messages)
+        else:
+            st.warning("⚠️ No embedded content found. Please upload a document first.")
+

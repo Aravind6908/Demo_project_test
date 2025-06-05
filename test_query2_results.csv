@@ -1,0 +1,103 @@
+document_id,query,ground_truth_answer,model_answer
+case2,What is the main legal issue discussed in the case?,"The main legal issue concerns the mass disqualification of 1,415 members from a cooperative society without individual inquiry. The action was based on a general notice and an undisclosed Committee report. The appellants argued this violated principles of natural justice. The Supreme Court examined whether such a process was legally and procedurally fair under the Maharashtra Cooperative Societies Act, 1960.","The main legal issue discussed in the case is the breach of the principles of natural justice, specifically the failure to disclose material evidence to the affected party, and the denial of an opportunity to rebut or comment on the evidence, which is essential for a fair and just decision-making process."
+case2,"Which court delivered the judgment, and who was the presiding judge?","The judgment was delivered by the Supreme Court of India in its Civil Appellate Jurisdiction. The presiding judge was Dr. Dhananjaya Y Chandrachud, Chief Justice of India (CJI). He authored the judgment in Civil Appeal Nos. 88–89 of 2023. Justice Pamidighantam Sri Narasimha was also part of the Bench.","Based on the given context, the court that delivered the judgment is the Supreme Court of India, and the presiding judge is Dr. Dhananjaya Y Chandrachud, who was the Chief Justice of India at that time."
+case2,What are the Civil Appeal or SLP numbers associated with this case?,The Civil Appeal numbers associated with this case are Civil Appeal Nos. 88–89 of 2023. These appeals originated from Special Leave Petition (Civil) Nos. 20001–20002 of 2022 and SLP (C) Nos. 22734–22737 of 2022.​,"The Civil Appeal or SLP numbers associated with this case are:
+
+- SLP (C) Nos 20001-20002 of 2022
+- SLP (C) Nos 22734-22737 of 2022"
+case2,Who are the parties involved in the case?,"The parties involved in the case are: Appellant: Deepak Ananda Patil Respondents: The State of Maharashtra and Others, including Shri Chhatrapati Rajaram Sahakari Sakhar Karkhana Limited (a cooperative society) and other individuals (respondents 3 to 8) who filed the original complaints.","Based on the provided context, the parties involved in the case are:
+
+1. Deepak Ananda Patil (Appellant)
+2. The State of Maharashtra (Respondent)
+
+Additionally, the following individuals are mentioned as appearing on behalf of the parties:
+
+1. Mr. Maninder Singh (Senior Counsel for the Appellants)
+2. Mr. Neeraj Kishan Kaul (Senior Counsel for the Appellants)
+3. Dr. Abhishek Manu Singhvi (Senior Counsel for the Original Complainants)
+4. Mr. Tushar Mehta (Solicitor General of India for the State of Maharashtra)"
+case2,What statutory or constitutional provisions are referenced?,"The statutory and constitutional provisions referenced in the document are: Section 11 of the Maharashtra Cooperative Societies Act, 1960 – relates to the eligibility and disqualification of members in a cooperative society. Section 152 of the Maharashtra Cooperative Societies Act, 1960 – provides for appeals against orders passed under the Act. Article 226 of the Constitution of India – grants High Courts the power to issue writs for enforcement of rights. ","Based on the given context, the statutory or constitutional provisions referenced are:
+
+1. Section 11 (of the Act, not specified in the context)
+2. The principles of natural justice (as mentioned in the context of administrative law)"
+case2,What orders were passed by the lower courts before reaching this court?,"Before the case reached the Supreme Court, the following orders were passed by the lower authorities: The Regional Joint Director (Sugar) passed an order on 14 February 2020, disqualifying 1,415 members of the cooperative society. An appeal under Section 152 was filed and subsequently dismissed on 18 February 2021 by the Minister of Cooperation. The affected parties then filed writ petitions before the High Court of Judicature at Bombay, which were rejected by a Single Judge on 22 September 2022.","Based on the given context, the following orders were passed by the lower courts before reaching the court in question:
+
+1. The Regional Joint Director (Sugar) was required to conclude the enquiry within a stipulated time frame, as per the direction of the High Court.
+2. The order under Section 11 was passed, which had serious consequences for the members.
+3. The Single Judge held that the power of the Registrar under Section 11 is not restricted to enquiring into the eligibility only at the stage of the formation or registration of the society.
+4. The Single Judge observed that there was no controversy on factual aspects and dealt with the submission that the Registrar had acted in accordance with the provisions of the Societies Registration Act, 1860.
+5. The findings of the Regional Joint Director were summarized in the Annexure to the order, which included Annexures B to B-6.
+
+These orders were passed by the lower courts before the case reached the court in question, which is likely the High Court or a higher court."
+case2,What is the timeline of legal events in this case?,"Here is the timeline of legal events in this case based on the document: 2019: Complaints were filed under Section 11 of the Maharashtra Cooperative Societies Act challenging the eligibility of ~2000 members. 20 December 2019: The High Court directed the Regional Joint Director (Sugar) to complete the inquiry by 15 February 2020. 3 January 2020: A show cause notice was issued to the cooperative society. 14 February 2020: The Regional Joint Director passed an order disqualifying 1,415 members. 18 February 2021: The appeal was dismissed by the Minister of Cooperation. 22 September 2022: The Bombay High Court rejected the writ petitions. 4 January 2023: The Supreme Court delivered its judgment, setting aside the previous orders.","Based on the given contexts, the timeline of legal events in this case can be inferred as follows:
+
+1. December 2019: 
+   - The High Court issued an order requiring the enquiry to be concluded in less than 2 months (by 15 February 2020).
+
+2. 2020:
+   - The Regional Joint Director pursued the enquiry in haste without considering the individual eligibility of each of the members who were sought to be disqualified.
+   - The enquiry was concluded, and the findings were summarized in the Annexure to the order.
+
+3. 2022:
+   - The appeals were filed (MA Nos 1978-1979 of 2022).
+   - The Interlocutory Applications seeking restoration of Special Leave Petition (C) Nos 20001-20002 of 2022 were filed.
+
+4. 2023:
+   - The case was heard by the Single Judge of the High Court.
+   - The findings of the Regional Joint Director were summarized in the judgment.
+
+5. 2025:
+   - The judgment was delivered (April 6 and 7, 2025).
+   - The appeals were allowed in the above terms (April 11, 2025)."
+case2,What was the direction given by the High Court?,"The High Court of Judicature at Bombay, in an order dated 20 December 2019, directed the Regional Joint Director (Sugar) to complete the enquiry into the eligibility of cooperative society members by 15 February 2020. This direction came in response to writ petitions filed by some complainants challenging the membership eligibility of nearly 2,000 individuals. The High Court imposed this deadline to expedite the process, which later became a point of contention, as the inquiry was allegedly conducted in haste without proper individual assessment.","The High Court directed the Regional Joint Director to conclude the enquiry within a stipulated time frame, specifically by 15 February 2020."
+case2,How much time was given to conclude the enquiry?,"The High Court gave the Regional Joint Director (Sugar) a time frame of less than two months to conclude the enquiry—specifically, from 20 December 2019 to 15 February 2020.","According to Context 2, the High Court directed the Regional Joint Director to conclude the enquiry by 15 February 2020."
+case2,What were the findings of the appellate authority before the Supreme Court's intervention?,"Before the Supreme Court's intervention, the appellate authority—the Minister of Cooperation—dismissed the appeal on 18 February 2021. The Minister upheld the findings of the Regional Joint Director (Sugar), which had disqualified 1,415 members from the cooperative society. The appellate authority did not address individual eligibility or procedural fairness, effectively affirming the mass disqualification without individualized scrutiny.",I do not have enough information to answer that.
+case2,Was there any breach of natural justice mentioned?,"Yes, the document clearly mentions a breach of natural justice. The Supreme Court found that: The Committee’s Report, which was used to determine member eligibility, was not disclosed to the affected members or the cooperative society. There was no individualized inquiry or specific allegations provided to each member. A general notice was issued instead of personal communication, and decisions were made without giving members a fair opportunity to respond. The Court held that this violated the principles of natural justice, as the affected members were denied a real and effective chance to defend themselves.","Yes, there was a breach of natural justice mentioned in the context. In Context 1, it was stated that the Regional Joint Director pursued the enquiry in haste without considering the individual eligibility of each of the members who were sought to be disqualified, and that the report of the Committee was not divulged to the members or the cooperative society, which was a breach of the principles of natural justice.
+
+In Context 2, it was mentioned that a copy of the report was not supplied to the individual members or to the cooperative society, which is a breach of the principles of natural justice.
+
+In Context 3, it was stated that the principles of natural justice must be observed in relation to each member whose membership is sought to be ousted, and that the adjudicatory body must be apprised of the material and given an opportunity to respond to it.
+
+In Context 4, it was mentioned that the findings of the Regional Joint Director were not considered in relation to the nature of the ineligibility, the ground of ineligibility, or the documentary material, which is a breach of the principles of natural justice.
+
+In Context 5, it was stated that there was a clear breach of the principles of natural justice due to the failure to supply a copy of the report to the individual members or the cooperative society, which resulted in serious prejudice to the members."
+case2,Were the affected parties given a chance to be heard?,"No, the affected parties were not given a proper chance to be heard. The inquiry was conducted based on a general notice sent to the cooperative society, and no specific allegations were made against individual members. Additionally, the Committee’s Report, which formed the basis of disqualification, was not shared with the members. As a result, the Supreme Court held that the members were denied a fair opportunity to present their case, amounting to a violation of the right to be heard.","Yes, the affected parties were given a chance to be heard. In Context 1, it is stated that the adjudicatory body must bring the material to the notice of the party and give them an opportunity to rebut it or comment thereon. In Context 3, it is mentioned that the adjudicatory body of the Regional Joint Director (Sugar) has been apprised of the material and given an opportunity to respond to it. In Context 5, it is stated that the Single Judge of the High Court has recorded the submission of the counsel appearing on behalf of the complainants that a Committee was constituted to verify the allegations and that the Committee submitted its report to the Regional Joint Director (Sugar), and a copy of the report was not supplied to the individual members or to the cooperative society, but the affected parties were given an opportunity to respond to the allegations."
+case2,What did the Supreme Court decide in this case?,"The Supreme Court allowed the appeals and set aside the following: The judgment of the High Court dated 22 September 2022, The order of the Regional Joint Director (Sugar) dated 14 February 2020, and The order of the Minister of Cooperation dated 18 February 2021. The Court restored the proceedings to the Regional Joint Director and directed that affected members be given access to the Committee’s report, complaints, and related documents, along with an opportunity to be heard. Fresh orders must be passed after following due process and hearing each member individually.",I do not have enough information to answer that.
+case2,Were the previous orders set aside or upheld?,"The previous orders were set aside by the Supreme Court. This included: The High Court’s judgment dated 22 September 2022, The Regional Joint Director (Sugar)’s order dated 14 February 2020, and The Minister of Cooperation’s appellate order dated 18 February 2021. All were nullified due to procedural lapses and violation of natural justice.","Based on the given context, the previous orders were set aside. 
+
+In Context 4, it is mentioned that the appeals are allowed in the following terms: a. The impugned judgment and order of the High Court, the order of the Regional Joint Director (Sugar), and the order in appeal of the Minister of Cooperation are set aside. 
+
+In Context 5, it is mentioned that the Special Leave Petitions are disposed of, which implies that the previous orders were set aside."
+case2,What relief was granted to the petitioners?,"The Supreme Court granted the following relief to the petitioners: Set aside all previous orders by the High Court, Regional Joint Director (Sugar), and Minister of Cooperation. Restored the proceedings to the Regional Joint Director (Sugar) for fresh adjudication. Directed that the Committee’s scrutiny report, complaints, and related documents be disclosed to the affected members. Allowed the members to submit replies within one month after disclosure. Ordered the Regional Joint Director to pass fresh orders after giving the members an opportunity to be heard, within three months thereafter.","Based on the provided context, the relief granted to the petitioners is:
+
+- The appeals are allowed in the terms specified.
+- The proceedings are restored to the file of the Regional Joint Director (Sugar).
+- The members who are sought to be proceeded against are entitled to a disclosure of the scrutiny report of the Committee as well as of the copy of the complaints and the documents annexed thereto.
+- No further notice to show cause is necessary to the members.
+- The impugned judgment and order of the High Court, the order of the Regional Joint Director (Sugar), and the order in appeal of the Minister of Cooperation are set aside."
+case2,What directions were given for further action?What directions were given for further action?,"The Supreme Court gave the following directions for further action: The proceedings were restored to the Regional Joint Director (Sugar). The affected members must be given copies of the Committee’s scrutiny report, complaints, and supporting documents within one month. Members are allowed to submit their replies within one month after receiving the documents. The Regional Joint Director must hear the members individually and pass fresh orders within three months thereafter.No new show cause notice is required since the members have already appeared in the proceedings","Based on the given contexts, I can identify the directions given for further action in the following cases:
+
+1. Context 2: 
+The directions given for further action are:
+- The Regional Joint Director shall pass fresh orders after furnishing to the members an opportunity of being heard within a period of three months thereafter.
+
+2. Context 3: 
+The directions given for further action are:
+- The members would be at liberty to submit their replies within a period of one month.
+- The Regional Joint Director shall pass fresh orders after furnishing to the members an opportunity of being heard within a period of three months thereafter.
+
+3. Context 4: 
+The directions given for further action are:
+- The exercise of disclosure of scrutiny report of the Committee, copy of complaints, and documents annexed thereto shall be completed within a period of one month from the date of this order.
+- Thereafter, the members would be at liberty to submit their replies within a period of one month.
+- The Regional Joint Director shall pass fresh orders after furnishing to the members an opportunity of being heard within a period of three months thereafter."
+case2,Does the judgment reference any landmark cases or precedents?,"Yes, the judgment references several landmark cases and precedents, particularly on the principles of natural justice and disclosure of material. Key cases cited include: T. Takano v. Securities and Exchange Board of India (2022) 8 SCC 162 Natwar Singh v. Director of Enforcement (2010) 13 SCC 255 Krishna Chandra Tandon v. Union of India (AIR 1974 SC 1589) Khudiram Das v. State of West Bengal (1975) 2 SCC 81 Union of India v. Mohd. Ramzan Khan (1991) 1 SCC 588 Managing Director, ECIL v. B. Karunakar (1993) 4 SCC 727 State Bank of Patiala v. SK Sharma (1996) 3 SCC 364 Kothari Filaments v. Commissioner of Customs (2009) 2 SCC 192 These cases were cited to emphasize the importance of fair hearing and the obligation to disclose evidence used in administrative proceedings.","Yes, the judgment references several landmark cases or precedents, including:
+
+1. T. Takano v Securities and Exchange Board of India
+2. Natwar Singh v Director of Enforcement
+3. Krishna Chandra Tandon v Union of India
+4. Khudiram Das v State of West Bengal
+5. Union of India v Mohd.
+6. B. Karunakar
+
+These cases are cited in the judgment to support the application of the principle of natural justice and to illustrate the importance of disclosing relevant information to the party against whom it is sought to be utilized."
